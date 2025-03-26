@@ -258,6 +258,38 @@
                     ],
                     "stateMutability": "view",
                     "type": "function"
+                },
+                {
+                    "inputs": [
+                        {
+                            "internalType": "address",
+                            "name": "account",
+                            "type": "address"
+                        }
+                    ],
+                    "name": "balanceOf",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "inputs": [],
+                    "name": "totalSupply",
+                    "outputs": [
+                        {
+                            "internalType": "uint256",
+                            "name": "",
+                            "type": "uint256"
+                        }
+                    ],
+                    "stateMutability": "view",
+                    "type": "function"
                 }
             ];
 
@@ -403,13 +435,58 @@
         // 更新池子信息
         async function updatePoolInfo() {
             try {
+                if (!poolContract || !token0Contract || !token1Contract || !userAddress) {
+                    throw new Error('合约或用户地址未初始化');
+                }
+
+                console.log('开始获取池子储备...');
                 const [reserve0, reserve1] = await poolContract.getReserves();
+                console.log('池子储备:', { reserve0: reserve0.toString(), reserve1: reserve1.toString() });
+                
+                console.log('开始获取代币余额...');
+                const token0Balance = await token0Contract.balanceOf(userAddress);
+                const token1Balance = await token1Contract.balanceOf(userAddress);
+                console.log('代币余额:', { 
+                    token0Balance: token0Balance.toString(), 
+                    token1Balance: token1Balance.toString() 
+                });
+                
+                console.log('开始获取 LP Token 余额...');
+                const lpBalance = await poolContract.balanceOf(userAddress);
+                console.log('LP Token 余额:', lpBalance.toString());
+                
+                const formattedReserve0 = ethers.utils.formatEther(reserve0);
+                const formattedReserve1 = ethers.utils.formatEther(reserve1);
+                const formattedToken0Balance = ethers.utils.formatEther(token0Balance);
+                const formattedToken1Balance = ethers.utils.formatEther(token1Balance);
+                const formattedLpBalance = ethers.utils.formatEther(lpBalance);
+                
                 document.getElementById('poolInfo').innerHTML = `
-                    <p>Token0 储备: ${ethers.utils.formatEther(reserve0)}</p>
-                    <p>Token1 储备: ${ethers.utils.formatEther(reserve1)}</p>
+                    <h3>池子储备</h3>
+                    <p>Token0 储备: ${formattedReserve0} T0</p>
+                    <p>Token1 储备: ${formattedReserve1} T1</p>
+                    
+                    <h3>您的余额</h3>
+                    <p>Token0 余额: ${formattedToken0Balance} T0</p>
+                    <p>Token1 余额: ${formattedToken1Balance} T1</p>
+                    <p>LP Token 余额: ${formattedLpBalance} LP</p>
+                    
+                    <h3>价格信息</h3>
+                    <p>Token0/Token1 价格: ${(Number(formattedReserve1) / Number(formattedReserve0)).toFixed(6)}</p>
+                    <p>Token1/Token0 价格: ${(Number(formattedReserve0) / Number(formattedReserve1)).toFixed(6)}</p>
                 `;
             } catch (error) {
-                console.error(error);
+                console.error('更新池子信息失败:', error);
+                console.error('错误详情:', {
+                    message: error.message,
+                    stack: error.stack,
+                    poolContract: !!poolContract,
+                    token0Contract: !!token0Contract,
+                    token1Contract: !!token1Contract,
+                    userAddress: userAddress
+                });
+                document.getElementById('poolInfo').innerHTML = 
+                    `<div class="error">更新池子信息失败: ${error.message}</div>`;
             }
         }
 
