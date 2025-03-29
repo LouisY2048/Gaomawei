@@ -1,46 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { Container, Row, Col, Card } from 'react-bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from 'styled-components';
 import Web3 from 'web3';
-import { ethers } from 'ethers';
+import styled from 'styled-components';
 
 // 组件导入
 import Header from './components/Header';
-import ConnectWallet from './components/ConnectWallet';
 import SwapForm from './components/SwapForm';
 import LiquidityForm from './components/LiquidityForm';
-import Balance from './components/Balance';
+import ConnectWallet from './components/ConnectWallet';
 
-// 合约ABI导入
+// 样式和主题导入
+import { theme, GlobalStyle } from './styles/theme';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+// 合约导入
 import NewTokenABI from './utils/contract-abis.json';
 import PoolABI from './utils/contract-abis.json';
-import addresses from './utils/deployed-addresses.json';
+import addresses from './contract-addresses.json';
+
+const AppWrapper = styled.div`
+  min-height: 100vh;
+  background: ${props => props.theme.colors.background};
+  padding: 2rem 0;
+`;
+
+const ContentContainer = styled.div`
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+`;
 
 function App() {
-  // 状态变量
   const [web3, setWeb3] = useState(null);
   const [account, setAccount] = useState('');
-  const [alphaToken, setAlphaToken] = useState(null);
-  const [betaToken, setBetaToken] = useState(null);
-  const [pool, setPool] = useState(null);
-  const [balances, setBalances] = useState({
-    alpha: '0',
-    beta: '0',
-    lp: '0'
+  const [tokens, setTokens] = useState({
+    alpha: { contract: null, address: '', balance: '0' },
+    beta: { contract: null, address: '', balance: '0' },
+    gamma: { contract: null, address: '', balance: '0' }
   });
-  const [poolBalances, setPoolBalances] = useState({
-    alpha: '0',
-    beta: '0'
+  const [pools, setPools] = useState({
+    alphabeta: null,
+    betagamma: null,
+    gammaalpha: null
   });
   const [isConnected, setIsConnected] = useState(false);
-  const [activeTab, setActiveTab] = useState('swap');
 
-  // 合约地址 - 从导入的地址文件中获取
-  const ALPHA_ADDRESS = addresses.token0;
-  const BETA_ADDRESS = addresses.token1;
-  const POOL_ADDRESS = addresses.pool;
-
-  // 连接钱包
   const connectWallet = async () => {
     if (window.ethereum) {
       try {
@@ -49,19 +54,41 @@ function App() {
         const accounts = await web3Instance.eth.getAccounts();
         
         // 初始化合约
-        const alphaContract = new web3Instance.eth.Contract(NewTokenABI.NewToken, ALPHA_ADDRESS);
-        const betaContract = new web3Instance.eth.Contract(NewTokenABI.NewToken, BETA_ADDRESS);
-        const poolContract = new web3Instance.eth.Contract(PoolABI.Pool, POOL_ADDRESS);
+        const alphaContract = new web3Instance.eth.Contract(NewTokenABI.NewToken, addresses.tokens.alpha);
+        const betaContract = new web3Instance.eth.Contract(NewTokenABI.NewToken, addresses.tokens.beta);
+        const gammaContract = new web3Instance.eth.Contract(NewTokenABI.NewToken, addresses.tokens.gamma);
         
+        const poolABContract = new web3Instance.eth.Contract(PoolABI.Pool_AB, addresses.pools.alphaBeta);
+        const poolBGContract = new web3Instance.eth.Contract(PoolABI.Pool_BG, addresses.pools.betaGamma);
+        const poolGAContract = new web3Instance.eth.Contract(PoolABI.Pool_GA, addresses.pools.gammaAlpha);
+
         setWeb3(web3Instance);
         setAccount(accounts[0]);
-        setAlphaToken(alphaContract);
-        setBetaToken(betaContract);
-        setPool(poolContract);
+        setTokens({
+          alpha: { 
+            contract: alphaContract, 
+            address: addresses.tokens.alpha,
+            balance: '0'
+          },
+          beta: { 
+            contract: betaContract, 
+            address: addresses.tokens.beta,
+            balance: '0'
+          },
+          gamma: { 
+            contract: gammaContract, 
+            address: addresses.tokens.gamma,
+            balance: '0'
+          }
+        });
+        setPools({
+          alphabeta: poolABContract,
+          betagamma: poolBGContract,
+          gammaalpha: poolGAContract
+        });
         setIsConnected(true);
-        
-        // 加载余额
-        await loadBalances(accounts[0], alphaContract, betaContract, poolContract);
+
+        await loadBalances(accounts[0], alphaContract, betaContract, gammaContract);
       } catch (error) {
         console.error("Error connecting to wallet:", error);
       }
@@ -70,99 +97,83 @@ function App() {
     }
   };
 
-  // 加载余额
-  const loadBalances = async (account, alpha, beta, pool) => {
+  const loadBalances = async (account, alpha, beta, gamma) => {
     try {
-      const alphaBalance = await alpha.methods.balanceOf(account).call();
-      const betaBalance = await beta.methods.balanceOf(account).call();
-      const lpBalance = await pool.methods.balanceOf(account).call();
-      
-      const poolAlphaBalance = await alpha.methods.balanceOf(POOL_ADDRESS).call();
-      const poolBetaBalance = await beta.methods.balanceOf(POOL_ADDRESS).call();
-      
-      setBalances({
-        alpha: web3.utils.fromWei(alphaBalance, 'ether'),
-        beta: web3.utils.fromWei(betaBalance, 'ether'),
-        lp: web3.utils.fromWei(lpBalance, 'ether')
-      });
-      
-      setPoolBalances({
-        alpha: web3.utils.fromWei(poolAlphaBalance, 'ether'),
-        beta: web3.utils.fromWei(poolBetaBalance, 'ether')
-      });
+      const [alphaBalance, betaBalance, gammaBalance] = await Promise.all([
+        alpha.methods.balanceOf(account).call(),
+        beta.methods.balanceOf(account).call(),
+        gamma.methods.balanceOf(account).call()
+      ]);
+
+      setTokens(prev => ({
+        alpha: { 
+          ...prev.alpha, 
+          balance: web3.utils.fromWei(alphaBalance, 'ether')
+        },
+        beta: { 
+          ...prev.beta, 
+          balance: web3.utils.fromWei(betaBalance, 'ether')
+        },
+        gamma: { 
+          ...prev.gamma, 
+          balance: web3.utils.fromWei(gammaBalance, 'ether')
+        }
+      }));
     } catch (error) {
       console.error("Error loading balances:", error);
     }
   };
 
-  // 若连接状态改变，重新加载余额
   useEffect(() => {
-    if (isConnected && account && alphaToken && betaToken && pool) {
-      loadBalances(account, alphaToken, betaToken, pool);
+    if (isConnected && web3 && account) {
+      loadBalances(account, tokens.alpha.contract, tokens.beta.contract, tokens.gamma.contract);
     }
-  }, [isConnected, account]);
+  }, [isConnected, web3, account]);
 
   return (
-    <Container fluid>
-      <Header />
-      <Row className="mt-4">
-        <Col md={4} className="mx-auto">
-          <Card className="shadow">
-            <Card.Body>
-              {!isConnected ? (
-                <ConnectWallet onConnect={connectWallet} />
-              ) : (
-                <>
-                  <Balance 
-                    balances={balances} 
-                    poolBalances={poolBalances} 
-                    account={account} 
+    <ThemeProvider theme={theme}>
+      <GlobalStyle />
+      <Router>
+        <AppWrapper>
+          <Header />
+          <ContentContainer>
+            {!isConnected ? (
+              <ConnectWallet onConnect={connectWallet} />
+            ) : (
+              <Routes>
+                <Route path="/" element={
+                  <SwapForm 
+                    web3={web3}
+                    account={account}
+                    tokens={tokens}
+                    pools={pools}
+                    reloadBalances={() => loadBalances(account, tokens.alpha.contract, tokens.beta.contract, tokens.gamma.contract)}
                   />
-                  <div className="d-flex justify-content-center mt-3 mb-3">
-                    <button 
-                      className={`btn ${activeTab === 'swap' ? 'btn-primary' : 'btn-outline-primary'} me-2`}
-                      onClick={() => setActiveTab('swap')}
-                    >
-                      Swap
-                    </button>
-                    <button 
-                      className={`btn ${activeTab === 'liquidity' ? 'btn-primary' : 'btn-outline-primary'}`}
-                      onClick={() => setActiveTab('liquidity')}
-                    >
-                      Liquidity
-                    </button>
-                  </div>
-                  
-                  {activeTab === 'swap' ? (
-                    <SwapForm 
-                      web3={web3}
-                      account={account}
-                      alphaToken={alphaToken}
-                      betaToken={betaToken}
-                      pool={pool}
-                      alphaAddress={ALPHA_ADDRESS}
-                      betaAddress={BETA_ADDRESS}
-                      reloadBalances={() => loadBalances(account, alphaToken, betaToken, pool)}
-                    />
-                  ) : (
-                    <LiquidityForm 
-                      web3={web3}
-                      account={account}
-                      alphaToken={alphaToken}
-                      betaToken={betaToken}
-                      pool={pool}
-                      alphaAddress={ALPHA_ADDRESS}
-                      betaAddress={BETA_ADDRESS}
-                      reloadBalances={() => loadBalances(account, alphaToken, betaToken, pool)}
-                    />
-                  )}
-                </>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+                } />
+                <Route path="/swap" element={
+                  <SwapForm 
+                    web3={web3}
+                    account={account}
+                    tokens={tokens}
+                    pools={pools}
+                    reloadBalances={() => loadBalances(account, tokens.alpha.contract, tokens.beta.contract, tokens.gamma.contract)}
+                  />
+                } />
+                <Route path="/pools" element={
+                  <LiquidityForm 
+                    web3={web3}
+                    account={account}
+                    tokens={tokens}
+                    pools={pools}
+                    reloadBalances={() => loadBalances(account, tokens.alpha.contract, tokens.beta.contract, tokens.gamma.contract)}
+                  />
+                } />
+              </Routes>
+            )}
+          </ContentContainer>
+        </AppWrapper>
+      </Router>
+    </ThemeProvider>
   );
 }
 

@@ -1,70 +1,136 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Spinner } from 'react-bootstrap';
+import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowDown } from 'react-bootstrap-icons';
+import TokenSelect from './TokenSelect';
 
-function SwapForm({ web3, account, alphaToken, betaToken, pool, alphaAddress, betaAddress, reloadBalances }) {
-  const [fromToken, setFromToken] = useState('alpha');
+const SwapContainer = styled(motion.div)`
+  background: ${props => props.theme.colors.foreground};
+  border-radius: 24px;
+  padding: 1.5rem;
+  box-shadow: ${props => props.theme.shadows.card};
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+`;
+
+const InputContainer = styled.div`
+  background: ${props => props.theme.colors.background};
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+`;
+
+const InputRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+`;
+
+const Input = styled.input`
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: ${props => props.theme.colors.text.primary};
+  width: 100%;
+  outline: none;
+
+  &::placeholder {
+    color: ${props => props.theme.colors.text.tertiary};
+  }
+`;
+
+const Balance = styled.span`
+  color: ${props => props.theme.colors.text.secondary};
+  font-size: 0.9rem;
+`;
+
+const SwapButton = styled(motion.button)`
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 1rem;
+  width: 100%;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  opacity: ${props => props.disabled ? 0.5 : 1};
+`;
+
+const ArrowContainer = styled(motion.div)`
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+  cursor: pointer;
+`;
+
+const PriceInfo = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  color: ${props => props.theme.colors.text.secondary};
+`;
+
+function SwapForm({ web3, account, tokens, pools, reloadBalances }) {
+  const [fromToken, setFromToken] = useState('ALPHA');
+  const [toToken, setToToken] = useState('BETA');
   const [amount, setAmount] = useState('');
   const [expectedOutput, setExpectedOutput] = useState('0');
   const [loading, setLoading] = useState(false);
   const [approving, setApproving] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
+  const [priceImpact, setPriceImpact] = useState('0');
 
-  // 计算预期输出
+  const getPool = () => {
+    const poolKey = `${fromToken.toLowerCase()}${toToken.toLowerCase()}`;
+    return pools[poolKey];
+  };
+
   const calculateOutput = async () => {
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
       setExpectedOutput('0');
+      setPriceImpact('0');
       return;
     }
 
     try {
+      const pool = getPool();
       const amountInWei = web3.utils.toWei(amount, 'ether');
-      const tokenIn = fromToken === 'alpha' ? alphaAddress : betaAddress;
-      const tokenOut = fromToken === 'alpha' ? betaAddress : alphaAddress;
+      const tokenIn = tokens[fromToken.toLowerCase()].address;
+      const tokenOut = tokens[toToken.toLowerCase()].address;
       
       const output = await pool.methods.getAmountOut(tokenIn, amountInWei, tokenOut).call();
       setExpectedOutput(web3.utils.fromWei(output, 'ether'));
+
+      const reserves = await pool.methods.getReserves().call();
+      const impact = calculatePriceImpact(amountInWei, reserves[0], reserves[1]);
+      setPriceImpact(impact.toFixed(2));
     } catch (error) {
       console.error("Error calculating output:", error);
       setExpectedOutput('0');
+      setPriceImpact('0');
     }
   };
 
-  // 检查代币授权
-  const checkAllowance = async () => {
-    try {
-      const token = fromToken === 'alpha' ? alphaToken : betaToken;
-      const allowance = await token.methods.allowance(account, pool._address).call();
-      const amountInWei = web3.utils.toWei(amount || '0', 'ether');
-      setIsApproved(BigInt(allowance) >= BigInt(amountInWei));
-    } catch (error) {
-      console.error("Error checking allowance:", error);
-      setIsApproved(false);
-    }
+  const switchTokens = () => {
+    setFromToken(toToken);
+    setToToken(fromToken);
+    setAmount('');
+    setExpectedOutput('0');
   };
 
-  // 授权代币
-  const approveToken = async () => {
-    try {
-      setApproving(true);
-      const token = fromToken === 'alpha' ? alphaToken : betaToken;
-      const amountInWei = web3.utils.toWei(amount, 'ether');
-      
-      await token.methods.approve(pool._address, amountInWei).send({ from: account });
-      setIsApproved(true);
-    } catch (error) {
-      console.error("Error approving token:", error);
-    } finally {
-      setApproving(false);
-    }
-  };
-
-  // 执行交换
-  const executeSwap = async () => {
+  const handleSwap = async () => {
     try {
       setLoading(true);
+      const pool = getPool();
       const amountInWei = web3.utils.toWei(amount, 'ether');
-      const tokenIn = fromToken === 'alpha' ? alphaAddress : betaAddress;
-      const tokenOut = fromToken === 'alpha' ? betaAddress : alphaAddress;
+      const tokenIn = tokens[fromToken.toLowerCase()].address;
+      const tokenOut = tokens[toToken.toLowerCase()].address;
       
       await pool.methods.swap(tokenIn, amountInWei, tokenOut).send({ from: account });
       setAmount('');
@@ -77,78 +143,69 @@ function SwapForm({ web3, account, alphaToken, betaToken, pool, alphaAddress, be
     }
   };
 
-  // 当输入金额或代币选择改变时，计算输出
   useEffect(() => {
     calculateOutput();
-    checkAllowance();
-  }, [amount, fromToken]);
+  }, [amount, fromToken, toToken]);
 
   return (
-    <div>
-      <h5 className="text-center mb-3">Swap Tokens</h5>
-      
-      <Form.Group className="mb-3">
-        <Form.Label>From</Form.Label>
-        <div className="d-flex">
-          <Form.Control
+    <SwapContainer
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <InputContainer>
+        <Balance>Balance: {tokens[fromToken.toLowerCase()].balance}</Balance>
+        <InputRow>
+          <Input
             type="number"
             placeholder="0.0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             disabled={loading || approving}
           />
-          <Form.Select
-            className="ms-2"
-            style={{ width: '120px' }}
-            value={fromToken}
-            onChange={(e) => setFromToken(e.target.value)}
-            disabled={loading || approving}
-          >
-            <option value="alpha">ALPHA</option>
-            <option value="beta">BETA</option>
-          </Form.Select>
-        </div>
-      </Form.Group>
-      
-      <div className="text-center my-2">↓</div>
-      
-      <Form.Group className="mb-3">
-        <Form.Label>To (estimated)</Form.Label>
-        <div className="d-flex">
-          <Form.Control
+          <TokenSelect token={fromToken} onSelect={() => {}} />
+        </InputRow>
+      </InputContainer>
+
+      <ArrowContainer
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={switchTokens}
+      >
+        <ArrowDown size={24} />
+      </ArrowContainer>
+
+      <InputContainer>
+        <Balance>Balance: {tokens[toToken.toLowerCase()].balance}</Balance>
+        <InputRow>
+          <Input
             type="text"
             value={expectedOutput}
             disabled
+            placeholder="0.0"
           />
-          <Form.Control
-            className="ms-2"
-            style={{ width: '120px' }}
-            value={fromToken === 'alpha' ? 'BETA' : 'ALPHA'}
-            disabled
-          />
-        </div>
-      </Form.Group>
-      
-      {amount && parseFloat(amount) > 0 && !isApproved ? (
-        <Button 
-          variant="primary" 
-          className="w-100 mt-3" 
-          onClick={approveToken}
-          disabled={approving || !amount || isNaN(amount) || parseFloat(amount) <= 0}
-        >
-          {approving ? <><Spinner animation="border" size="sm" /> Approving...</> : 'Approve'}
-        </Button>
-      ) : (
-        <Button 
-          variant="primary" 
-          className="w-100 mt-3" 
-          onClick={executeSwap}
-          disabled={loading || !amount || isNaN(amount) || parseFloat(amount) <= 0 || !isApproved}
-        >
-          {loading ? <><Spinner animation="border" size="sm" /> Swapping...</> : 'Swap'}
-        </Button>
+          <TokenSelect token={toToken} onSelect={() => {}} />
+        </InputRow>
+      </InputContainer>
+
+      {parseFloat(priceImpact) > 0 && (
+        <PriceInfo>
+          <span>Price Impact</span>
+          <span className={parseFloat(priceImpact) > 5 ? 'text-danger' : 'text-success'}>
+            {priceImpact}%
+          </span>
+        </PriceInfo>
       )}
-    </div>
+
+      <SwapButton
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleSwap}
+        disabled={loading || !amount || parseFloat(amount) <= 0}
+      >
+        {loading ? 'Swapping...' : 'Swap'}
+      </SwapButton>
+    </SwapContainer>
   );
 }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Spinner, Tabs, Tab } from 'react-bootstrap';
+import { Form, Button, Spinner, Card, Tabs, Tab } from 'react-bootstrap';
+import { ArrowDown } from 'react-bootstrap-icons';
 
 function LiquidityForm({ web3, account, alphaToken, betaToken, pool, alphaAddress, betaAddress, reloadBalances }) {
   const [mode, setMode] = useState('add'); // 'add' or 'remove'
@@ -10,6 +11,7 @@ function LiquidityForm({ web3, account, alphaToken, betaToken, pool, alphaAddres
   const [approving, setApproving] = useState(false);
   const [alphaApproved, setAlphaApproved] = useState(false);
   const [betaApproved, setBetaApproved] = useState(false);
+  const [shareOfPool, setShareOfPool] = useState('0');
 
   // 计算Beta代币需求量
   const calculateBetaAmount = async () => {
@@ -22,9 +24,15 @@ function LiquidityForm({ web3, account, alphaToken, betaToken, pool, alphaAddres
       const amountInWei = web3.utils.toWei(alphaAmount, 'ether');
       const required = await pool.methods.getRequiredAmount1(amountInWei).call();
       setBetaAmount(web3.utils.fromWei(required, 'ether'));
+      
+      // 计算池子份额
+      const totalSupply = await pool.methods.totalSupply().call();
+      const newShare = (parseFloat(alphaAmount) / (parseFloat(web3.utils.fromWei(totalSupply, 'ether')) + parseFloat(alphaAmount))) * 100;
+      setShareOfPool(newShare.toFixed(2));
     } catch (error) {
       console.error("Error calculating Beta amount:", error);
       setBetaAmount('');
+      setShareOfPool('0');
     }
   };
 
@@ -109,101 +117,182 @@ function LiquidityForm({ web3, account, alphaToken, betaToken, pool, alphaAddres
   }, [alphaAmount, mode]);
 
   return (
-    <div>
-      <h5 className="text-center mb-3">Liquidity Management</h5>
-      
-      <Tabs 
-        activeKey={mode} 
-        onSelect={(k) => setMode(k)} 
-        className="mb-3"
-      >
-        <Tab eventKey="add" title="Add Liquidity">
-          <Form.Group className="mb-3">
-            <Form.Label>Alpha Amount</Form.Label>
-            <Form.Control
-              type="number"
-              placeholder="0.0"
-              value={alphaAmount}
-              onChange={(e) => setAlphaAmount(e.target.value)}
-              disabled={loading || approving}
-            />
-          </Form.Group>
+    <Card className="border-0 shadow-sm">
+      <Card.Body className="p-4">
+        <Tabs 
+          activeKey={mode} 
+          onSelect={(k) => setMode(k)} 
+          className="mb-4"
+        >
+          <Tab eventKey="add" title="Add Liquidity">
+            <div className="liquidity-container">
+              {/* Alpha Token Input */}
+              <div className="swap-input-container mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="text-muted">Alpha Amount</span>
+                  <span className="text-muted">Balance: {balances.alpha}</span>
+                </div>
+                <div className="d-flex align-items-center">
+                  <Form.Control
+                    type="number"
+                    placeholder="0.0"
+                    value={alphaAmount}
+                    onChange={(e) => setAlphaAmount(e.target.value)}
+                    className="border-0 bg-light"
+                    disabled={loading || approving}
+                  />
+                  <div className="ms-3">
+                    <Form.Control
+                      className="border-0 bg-light"
+                      value="ALPHA"
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Plus Icon */}
+              <div className="text-center my-2">
+                <div className="swap-arrow">
+                  <ArrowDown size={24} />
+                </div>
+              </div>
+
+              {/* Beta Token Input */}
+              <div className="swap-input-container mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="text-muted">Beta Amount</span>
+                  <span className="text-muted">Balance: {balances.beta}</span>
+                </div>
+                <div className="d-flex align-items-center">
+                  <Form.Control
+                    type="text"
+                    value={betaAmount}
+                    className="border-0 bg-light"
+                    disabled
+                  />
+                  <div className="ms-3">
+                    <Form.Control
+                      className="border-0 bg-light"
+                      value="BETA"
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Pool Share */}
+              {parseFloat(shareOfPool) > 0 && (
+                <div className="pool-share mb-3">
+                  <div className="d-flex justify-content-between">
+                    <span className="text-muted">Pool Share</span>
+                    <span className="text-primary">{shareOfPool}%</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Approve Buttons */}
+              {alphaAmount && parseFloat(alphaAmount) > 0 && !alphaApproved && (
+                <Button 
+                  variant="outline-primary" 
+                  className="w-100 mb-2" 
+                  onClick={() => approveToken('alpha')}
+                  disabled={approving}
+                >
+                  {approving ? (
+                    <><Spinner animation="border" size="sm" className="me-2" /> Approving Alpha...</>
+                  ) : (
+                    'Approve Alpha'
+                  )}
+                </Button>
+              )}
+              
+              {betaAmount && parseFloat(betaAmount) > 0 && !betaApproved && (
+                <Button 
+                  variant="outline-primary" 
+                  className="w-100 mb-2" 
+                  onClick={() => approveToken('beta')}
+                  disabled={approving}
+                >
+                  {approving ? (
+                    <><Spinner animation="border" size="sm" className="me-2" /> Approving Beta...</>
+                  ) : (
+                    'Approve Beta'
+                  )}
+                </Button>
+              )}
+
+              {/* Add Liquidity Button */}
+              <Button 
+                variant="primary" 
+                className="w-100 py-3" 
+                onClick={addLiquidity}
+                disabled={
+                  loading || 
+                  !alphaAmount || 
+                  !betaAmount || 
+                  isNaN(alphaAmount) || 
+                  isNaN(betaAmount) || 
+                  parseFloat(alphaAmount) <= 0 || 
+                  parseFloat(betaAmount) <= 0 || 
+                  !alphaApproved || 
+                  !betaApproved
+                }
+              >
+                {loading ? (
+                  <><Spinner animation="border" size="sm" className="me-2" /> Adding Liquidity...</>
+                ) : (
+                  'Add Liquidity'
+                )}
+              </Button>
+            </div>
+          </Tab>
           
-          <Form.Group className="mb-3">
-            <Form.Label>Beta Amount (calculated)</Form.Label>
-            <Form.Control
-              type="number"
-              placeholder="0.0"
-              value={betaAmount}
-              disabled
-            />
-          </Form.Group>
-          
-          {alphaAmount && parseFloat(alphaAmount) > 0 && !alphaApproved && (
-            <Button 
-              variant="outline-primary" 
-              className="w-100 mb-2" 
-              onClick={() => approveToken('alpha')}
-              disabled={approving}
-            >
-              {approving ? <><Spinner animation="border" size="sm" /> Approving Alpha...</> : 'Approve Alpha'}
-            </Button>
-          )}
-          
-          {betaAmount && parseFloat(betaAmount) > 0 && !betaApproved && (
-            <Button 
-              variant="outline-primary" 
-              className="w-100 mb-2" 
-              onClick={() => approveToken('beta')}
-              disabled={approving}
-            >
-              {approving ? <><Spinner animation="border" size="sm" /> Approving Beta...</> : 'Approve Beta'}
-            </Button>
-          )}
-          
-          <Button 
-            variant="primary" 
-            className="w-100 mt-3" 
-            onClick={addLiquidity}
-            disabled={
-              loading || 
-              !alphaAmount || 
-              !betaAmount || 
-              isNaN(alphaAmount) || 
-              isNaN(betaAmount) || 
-              parseFloat(alphaAmount) <= 0 || 
-              parseFloat(betaAmount) <= 0 || 
-              !alphaApproved || 
-              !betaApproved
-            }
-          >
-            {loading ? <><Spinner animation="border" size="sm" /> Adding Liquidity...</> : 'Add Liquidity'}
-          </Button>
-        </Tab>
-        
-        <Tab eventKey="remove" title="Remove Liquidity">
-          <Form.Group className="mb-3">
-            <Form.Label>LP Token Amount</Form.Label>
-            <Form.Control
-              type="number"
-              placeholder="0.0"
-              value={lpAmount}
-              onChange={(e) => setLpAmount(e.target.value)}
-              disabled={loading}
-            />
-          </Form.Group>
-          
-          <Button 
-            variant="primary" 
-            className="w-100 mt-3" 
-            onClick={removeLiquidity}
-            disabled={loading || !lpAmount || isNaN(lpAmount) || parseFloat(lpAmount) <= 0}
-          >
-            {loading ? <><Spinner animation="border" size="sm" /> Removing Liquidity...</> : 'Remove Liquidity'}
-          </Button>
-        </Tab>
-      </Tabs>
-    </div>
+          <Tab eventKey="remove" title="Remove Liquidity">
+            <div className="liquidity-container">
+              {/* LP Token Input */}
+              <div className="swap-input-container mb-3">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="text-muted">LP Token Amount</span>
+                  <span className="text-muted">Balance: {balances.lp}</span>
+                </div>
+                <div className="d-flex align-items-center">
+                  <Form.Control
+                    type="number"
+                    placeholder="0.0"
+                    value={lpAmount}
+                    onChange={(e) => setLpAmount(e.target.value)}
+                    className="border-0 bg-light"
+                    disabled={loading}
+                  />
+                  <div className="ms-3">
+                    <Form.Control
+                      className="border-0 bg-light"
+                      value="LPT"
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Remove Liquidity Button */}
+              <Button 
+                variant="primary" 
+                className="w-100 py-3" 
+                onClick={removeLiquidity}
+                disabled={loading || !lpAmount || isNaN(lpAmount) || parseFloat(lpAmount) <= 0}
+              >
+                {loading ? (
+                  <><Spinner animation="border" size="sm" className="me-2" /> Removing Liquidity...</>
+                ) : (
+                  'Remove Liquidity'
+                )}
+              </Button>
+            </div>
+          </Tab>
+        </Tabs>
+      </Card.Body>
+    </Card>
   );
 }
 
