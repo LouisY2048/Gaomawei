@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./CustomERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
-contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
+contract NewToken is CustomERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit, ERC20Votes {
     // 代币元数据
-    string private _tokenURI;
+    string private _tokenMetadataURI;
     uint256 public constant MAX_SUPPLY = 1000000 * 10**18; // 最大供应量
     uint256 public constant MIN_BALANCE = 1 * 10**18; // 最小余额要求
     
@@ -26,9 +28,9 @@ contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     constructor(
         string memory name,
         string memory symbol,
-        string memory tokenURI
-    ) ERC20(name, symbol) Ownable(msg.sender) {
-        _tokenURI = tokenURI;
+        string memory metadataURI
+    ) CustomERC20(name, symbol) ERC20Permit(name) Ownable(msg.sender) {
+        _tokenMetadataURI = metadataURI;
         maxTransferAmount = MAX_SUPPLY / 100; // 默认最大转账额为总供应量的1%
         transferRestricted = true; // 默认开启转账限制
     }
@@ -38,17 +40,9 @@ contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
      * @param to 接收地址
      * @param amount 铸造数量
      */
-    function mint(address to, uint256 amount) 
-        public 
-        onlyOwner 
-        whenNotPaused 
-        nonReentrant 
-    {
+    function mint(address to, uint256 amount) public onlyOwner override {
         require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
-        require(to != address(0), "Invalid recipient");
-        require(amount > 0, "Amount must be greater than 0");
-        
-        _mint(to, amount);
+        super.mint(to, amount);
         emit TokenMinted(to, amount);
     }
 
@@ -56,15 +50,11 @@ contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
      * @dev 销毁代币
      * @param amount 销毁数量
      */
-    function burn(uint256 amount) 
-        public 
-        whenNotPaused 
-        nonReentrant 
-    {
-        require(balanceOf(msg.sender) >= amount, "Insufficient balance");
-        require(amount > 0, "Amount must be greater than 0");
-        
-        _burn(msg.sender, amount);
+    function burn(uint256 amount) public override(CustomERC20, ERC20Burnable) {
+        uint256 senderBalance = balanceOf(msg.sender);
+        require(senderBalance >= amount, "ERC20: burn amount exceeds balance");
+        require(senderBalance - amount >= MIN_BALANCE, "Balance would fall below minimum");
+        super.burn(amount);
         emit TokenBurned(msg.sender, amount);
     }
 
@@ -72,11 +62,7 @@ contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
      * @dev 设置最大转账金额
      * @param newAmount 新的最大转账金额
      */
-    function setMaxTransferAmount(uint256 newAmount) 
-        public 
-        onlyOwner 
-        whenNotPaused 
-    {
+    function setMaxTransferAmount(uint256 newAmount) public onlyOwner {
         require(newAmount > 0, "Amount must be greater than 0");
         uint256 oldAmount = maxTransferAmount;
         maxTransferAmount = newAmount;
@@ -87,11 +73,7 @@ contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
      * @dev 更新转账限制状态
      * @param newStatus 新的限制状态
      */
-    function setTransferRestriction(bool newStatus) 
-        public 
-        onlyOwner 
-        whenNotPaused 
-    {
+    function setTransferRestriction(bool newStatus) public onlyOwner {
         bool oldStatus = transferRestricted;
         transferRestricted = newStatus;
         emit TransferRestrictionUpdated(oldStatus, newStatus);
@@ -101,12 +83,9 @@ contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
      * @dev 设置代币URI
      * @param newTokenURI 新的URI
      */
-    function setTokenURI(string memory newTokenURI) 
-        public 
-        onlyOwner 
-        whenNotPaused 
-    {
-        _tokenURI = newTokenURI;
+    function setTokenURI(string memory newTokenURI) public onlyOwner {
+        require(bytes(newTokenURI).length > 0, "URI cannot be empty");
+        _tokenMetadataURI = newTokenURI;
         emit TokenURISet(newTokenURI);
     }
 
@@ -125,31 +104,53 @@ contract NewToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     /**
-     * @dev 重写转账函数，添加限制
-     */
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override whenNotPaused {
-        require(from != address(0), "Invalid sender");
-        require(to != address(0), "Invalid recipient");
-        require(amount > 0, "Amount must be greater than 0");
-        
-        if (transferRestricted) {
-            require(amount <= maxTransferAmount, "Exceeds max transfer amount");
-        }
-        
-        require(balanceOf(from) >= amount, "Insufficient balance");
-        require(balanceOf(to) + amount >= MIN_BALANCE, "Recipient balance too low");
-        
-        super._transfer(from, to, amount);
-    }
-
-    /**
      * @dev 获取代币URI
      */
     function tokenURI() public view returns (string memory) {
-        return _tokenURI;
+        return _tokenMetadataURI;
+    }
+
+    // The following functions are overrides required by Solidity.
+
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal virtual override(ERC20, ERC20Pausable, ERC20Votes) {
+        require(!paused(), "Token transfer while paused");
+        require(from != to, "Self transfers not allowed");
+        
+        if (from != address(0) && to != address(0)) { // 只在转账时检查，不在铸造和销毁时检查
+            require(value > 0, "Amount must be greater than 0");
+            
+            if (transferRestricted) {
+                require(value <= maxTransferAmount, "Exceeds max transfer amount");
+            }
+            
+            // 检查发送者余额
+            uint256 fromBalance = balanceOf(from);
+            require(fromBalance >= value, "Insufficient balance");
+            require(fromBalance - value >= MIN_BALANCE, "Balance would fall below minimum");
+            
+            uint256 toBalance = balanceOf(to);
+            if (toBalance > 0) {
+                // 如果接收者已经有余额，那么转账后的余额必须大于等于最小余额
+                require(toBalance >= MIN_BALANCE, "Recipient balance too low");
+            } else {
+                // 如果接收者是新用户，那么转账金额必须大于等于最小余额
+                require(value >= MIN_BALANCE, "Transfer amount too low for new recipient");
+            }
+        }
+        
+        super._update(from, to, value);
+    }
+
+    function nonces(address owner)
+        public
+        view
+        override(ERC20Permit, Nonces)
+        returns (uint256)
+    {
+        return super.nonces(owner);
     }
 }
