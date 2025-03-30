@@ -2,13 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./LPToken.sol";
+import "./BaseToken.sol";
 
-abstract contract BasePool is LPToken {
-    // Constants
-    uint256 public constant MIN_LIQUIDITY = 1000; // 最小流动性要求
-    uint256 public constant MAX_PRICE_IMPACT = 10; // 最大价格影响（10%）
-    
+abstract contract BasePool is BaseToken {
     // State variables
     address private immutable _token0;
     address private immutable _token1;
@@ -43,9 +39,14 @@ abstract contract BasePool is LPToken {
         uint256 liquidity
     );
 
-    constructor(address token0_, address token1_) LPToken() {
-        require(token0_ != address(0), "BasePool: ZERO_ADDRESS");
-        require(token1_ != address(0), "BasePool: ZERO_ADDRESS");
+    constructor(
+        address token0_,
+        address token1_,
+        string memory name,
+        string memory symbol
+    ) BaseToken(name, symbol) {
+        require(token0_ != address(0), "BasePool: First Token is ZERO_ADDRESS");
+        require(token1_ != address(0), "BasePool: Second Token is ZERO_ADDRESS");
         require(token0_ != token1_, "BasePool: IDENTICAL_ADDRESSES");
 
         _token0 = token0_;
@@ -55,15 +56,6 @@ abstract contract BasePool is LPToken {
     // Modifiers
     modifier whenInitialized() virtual override {
         require(_initialized, "BasePool: NOT_INITIALIZED");
-        _;
-    }
-
-    modifier checkMinLiquidity() virtual {
-        require(
-            IERC20(_token0).balanceOf(address(this)) >= MIN_LIQUIDITY &&
-            IERC20(_token1).balanceOf(address(this)) >= MIN_LIQUIDITY,
-            "BasePool: INSUFFICIENT_LIQUIDITY"
-        );
         _;
     }
 
@@ -90,14 +82,8 @@ abstract contract BasePool is LPToken {
         _reserve1 = IERC20(_token1).balanceOf(address(this));
     }
 
-    function _checkPriceImpact(uint256 oldPrice, uint256 newPrice) internal pure {
-        uint256 priceChange;
-        if (newPrice > oldPrice) {
-            priceChange = ((newPrice - oldPrice) * 100) / oldPrice;
-        } else {
-            priceChange = ((oldPrice - newPrice) * 100) / oldPrice;
-        }
-        require(priceChange <= MAX_PRICE_IMPACT, "BasePool: PRICE_IMPACT_TOO_HIGH");
+    function _setInitialized() internal {
+        _initialized = true;
     }
 
     // Abstract functions to be implemented by derived contracts

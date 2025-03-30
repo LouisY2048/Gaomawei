@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./CustomERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
-contract NewToken is CustomERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit, ERC20Votes {
+contract NewToken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Permit, ERC20Votes {
     // 代币元数据
     string private _tokenMetadataURI;
     uint256 public constant MAX_SUPPLY = 1000000 * 10**18; // 最大供应量
@@ -29,7 +29,7 @@ contract NewToken is CustomERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Pe
         string memory name,
         string memory symbol,
         string memory metadataURI
-    ) CustomERC20(name, symbol) ERC20Permit(name) Ownable(msg.sender) {
+    ) ERC20(name, symbol) ERC20Permit(name) Ownable(msg.sender) {
         _tokenMetadataURI = metadataURI;
         maxTransferAmount = MAX_SUPPLY / 100; // 默认最大转账额为总供应量的1%
         transferRestricted = true; // 默认开启转账限制
@@ -40,9 +40,9 @@ contract NewToken is CustomERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Pe
      * @param to 接收地址
      * @param amount 铸造数量
      */
-    function mint(address to, uint256 amount) public onlyOwner override {
+    function mint(address to, uint256 amount) public onlyOwner {
         require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
-        super.mint(to, amount);
+        _mint(to, amount);
         emit TokenMinted(to, amount);
     }
 
@@ -50,11 +50,11 @@ contract NewToken is CustomERC20, ERC20Burnable, ERC20Pausable, Ownable, ERC20Pe
      * @dev 销毁代币
      * @param amount 销毁数量
      */
-    function burn(uint256 amount) public override(CustomERC20, ERC20Burnable) {
+    function burn(uint256 amount) public override(ERC20Burnable) {
         uint256 senderBalance = balanceOf(msg.sender);
         require(senderBalance >= amount, "ERC20: burn amount exceeds balance");
         require(senderBalance - amount >= MIN_BALANCE, "Balance would fall below minimum");
-        super.burn(amount);
+        _burn(msg.sender, amount);
         emit TokenBurned(msg.sender, amount);
     }
 

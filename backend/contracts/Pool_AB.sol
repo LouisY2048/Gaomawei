@@ -1,152 +1,202 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./base_Pool.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./NewToken.sol";
+import "./LPToken.sol";
 
-contract Pool_AB is BasePool {
+contract Pool_AB {
     // 状态变量
+    address public immutable alpha;
+    address public immutable beta;
+    LPToken public immutable lpToken;
     mapping(address => uint256) private tokenBalances;
-    
-    constructor(address alpha, address beta) BasePool(alpha, beta) {}
+    bool private _initialized;
 
-    function initialize(uint256 amount0) external override {
-        require(!isInitialized(), "Pool already initialized");
-        require(amount0 >= MIN_LIQUIDITY, "Initial liquidity too low");
+    // 事件
+    event PoolInitialized(
+        address indexed alpha,
+        address indexed beta,
+        uint256 amountAlpha,
+        uint256 amountBeta
+    );
+    event Swap(
+        address indexed sender,
+        address indexed tokenIn,
+        address indexed tokenOut,
+        uint256 amountIn,
+        uint256 amountOut
+    );
+    event LiquidityAdded(
+        address indexed provider,
+        uint256 amountAlpha,
+        uint256 amountBeta,
+        uint256 liquidity
+    );
+    event LiquidityRemoved(
+        address indexed provider,
+        uint256 amountAlpha,
+        uint256 amountBeta,
+        uint256 liquidity
+    );
 
-        uint256 amount1 = amount0; // 1:1 比例用于初始化
-        
-        // 转入代币
-        require(IERC20(token0()).transferFrom(msg.sender, address(this), amount0), "Transfer token0 failed");
-        require(IERC20(token1()).transferFrom(msg.sender, address(this), amount1), "Transfer token1 failed");
-        
-        // 更新余额
-        tokenBalances[token0()] = amount0;
-        tokenBalances[token1()] = amount1;
-        
-        // 铸造LP代币
-        _mint(msg.sender, amount0);
-        
-        emit PoolInitialized(token0(), token1(), amount0, amount1);
+    constructor(address alpha_, address beta_) {
+        require(alpha_ != address(0), "Alpha token is zero address");
+        require(beta_ != address(0), "Beta token is zero address");
+        require(alpha_ != beta_, "Identical addresses");
+
+        alpha = alpha_;
+        beta = beta_;
+        lpToken = new LPToken();
+        lpToken.initialize(address(this));
     }
 
-    function addLiquidity(uint256 amount0) external override whenInitialized returns (uint256) {
-        require(amount0 > 0, "Zero amount");
-        
-        uint256 amount1 = getRequiredAmount1(amount0);
-        require(amount1 > 0, "Invalid amount1");
+    // Modifiers
+    modifier whenInitialized() {
+        require(_initialized, "Pool not initialized");
+        _;
+    }
+
+    // View functions
+    function getReserves() public view returns (uint256 reserveAlpha, uint256 reserveBeta) {
+        return (tokenBalances[alpha], tokenBalances[beta]);
+    }
+
+    function isInitialized() public view returns (bool) {
+        return _initialized;
+    }
+
+    // External functions
+    function initialize(uint256 amountAlpha) external {
+        require(!_initialized, "Pool already initialized");
+        require(amountAlpha > 0, "Zero amount");
+
+        uint256 amountBeta = amountAlpha; // 1:1 比例用于初始化
         
         // 转入代币
-        require(IERC20(token0()).transferFrom(msg.sender, address(this), amount0), "Transfer token0 failed");
-        require(IERC20(token1()).transferFrom(msg.sender, address(this), amount1), "Transfer token1 failed");
+        require(IERC20(alpha).transferFrom(msg.sender, address(this), amountAlpha), "Transfer Alpha failed");
+        require(IERC20(beta).transferFrom(msg.sender, address(this), amountBeta), "Transfer Beta failed");
         
         // 更新余额
-        tokenBalances[token0()] += amount0;
-        tokenBalances[token1()] += amount1;
-        
-        // 计算LP代币数量
-        uint256 amountLP = (amount0 * totalSupply()) / tokenBalances[token0()];
+        tokenBalances[alpha] = amountAlpha;
+        tokenBalances[beta] = amountBeta;
         
         // 铸造LP代币
-        _mint(msg.sender, amountLP);
+        lpToken.mint(msg.sender, amountAlpha);
         
-        emit LiquidityAdded(msg.sender, amount0, amount1, amountLP);
+        _initialized = true;
+        emit PoolInitialized(alpha, beta, amountAlpha, amountBeta);
+    }
+
+    function addLiquidity(uint256 amountAlpha) external whenInitialized returns (uint256) {
+        require(amountAlpha > 0, "Zero amount");
+        
+        uint256 amountBeta = getRequiredAmountBeta(amountAlpha);
+        require(amountBeta > 0, "Invalid amountBeta");
+        
+        // 转入代币
+        require(IERC20(alpha).transferFrom(msg.sender, address(this), amountAlpha), "Transfer Alpha failed");
+        require(IERC20(beta).transferFrom(msg.sender, address(this), amountBeta), "Transfer Beta failed");
+        
+        // 更新余额
+        tokenBalances[alpha] += amountAlpha;
+        tokenBalances[beta] += amountBeta;
+        
+        // 计算LP代币数量
+        uint256 totalLPSupply = lpToken.totalSupply();
+        uint256 amountLP;
+        if (totalLPSupply == 0) {
+            amountLP = amountAlpha;
+        } else {
+            amountLP = (amountAlpha * totalLPSupply) / tokenBalances[alpha];
+        }
+        
+        // 铸造LP代币
+        lpToken.mint(msg.sender, amountLP);
+        
+        emit LiquidityAdded(msg.sender, amountAlpha, amountBeta, amountLP);
         
         return amountLP;
     }
 
-    function removeLiquidity(uint256 lpAmount) external override whenInitialized checkMinLiquidity returns (uint256, uint256) {
+    function removeLiquidity(uint256 lpAmount) external whenInitialized returns (uint256, uint256) {
         require(lpAmount > 0, "Zero amount");
-        require(balanceOf(msg.sender) >= lpAmount, "Insufficient LP balance");
+        require(lpToken.balanceOf(msg.sender) >= lpAmount, "Insufficient LP balance");
         
         // 计算返还金额
-        uint256 totalLPSupply = totalSupply();
-        uint256 amount0 = (lpAmount * tokenBalances[token0()]) / totalLPSupply;
-        uint256 amount1 = (lpAmount * tokenBalances[token1()]) / totalLPSupply;
-        
-        // 检查最小流动性
-        uint256 remainingLiquidity = totalLPSupply - lpAmount;
-        require(remainingLiquidity >= MIN_LIQUIDITY, "Would break minimum liquidity");
+        uint256 totalLPSupply = lpToken.totalSupply();
+        uint256 amountAlpha = (lpAmount * tokenBalances[alpha]) / totalLPSupply;
+        uint256 amountBeta = (lpAmount * tokenBalances[beta]) / totalLPSupply;
         
         // 销毁LP代币
-        _burn(msg.sender, lpAmount);
+        lpToken.burn(msg.sender, lpAmount);
         
         // 更新池余额并转账
-        tokenBalances[token0()] -= amount0;
-        tokenBalances[token1()] -= amount1;
+        tokenBalances[alpha] -= amountAlpha;
+        tokenBalances[beta] -= amountBeta;
         
-        require(IERC20(token0()).transfer(msg.sender, amount0), "Transfer token0 failed");
-        require(IERC20(token1()).transfer(msg.sender, amount1), "Transfer token1 failed");
+        require(IERC20(alpha).transfer(msg.sender, amountAlpha), "Transfer Alpha failed");
+        require(IERC20(beta).transfer(msg.sender, amountBeta), "Transfer Beta failed");
         
-        emit LiquidityRemoved(msg.sender, amount0, amount1, lpAmount);
+        emit LiquidityRemoved(msg.sender, amountAlpha, amountBeta, lpAmount);
         
-        return (amount0, amount1);
+        return (amountAlpha, amountBeta);
     }
 
     function swap(
         address tokenIn,
         uint256 amountIn,
         address tokenOut
-    ) external override whenInitialized returns (uint256) {
+    ) external whenInitialized returns (uint256) {
         require(tokenIn != tokenOut, "Same tokens");
         require(
-            (tokenIn == token0() && tokenOut == token1()) ||
-            (tokenIn == token1() && tokenOut == token0()),
+            (tokenIn == alpha && tokenOut == beta) ||
+            (tokenIn == beta && tokenOut == alpha),
             "Invalid token pair"
         );
         require(amountIn > 0, "Zero input amount");
 
         // 获取当前价格
-        (uint256 reserve0, uint256 reserve1) = getReserves();
-        uint256 currentPrice = tokenIn == token0() ? 
-            (reserve1 * 1e18) / reserve0 : 
-            (reserve0 * 1e18) / reserve1;
+        (uint256 reserveAlpha, uint256 reserveBeta) = getReserves();
+        uint256 currentPrice = tokenIn == alpha ? 
+            (reserveBeta * 1e18) / reserveAlpha : 
+            (reserveAlpha * 1e18) / reserveBeta;
 
         // 计算输出金额
         uint256 amountOut;
-        if (tokenIn == token0()) {
-            amountOut = (amountIn * reserve1) / (reserve0 + amountIn);
+        if (tokenIn == alpha) {
+            amountOut = (amountIn * reserveBeta) / (reserveAlpha + amountIn);
         } else {
-            amountOut = (amountIn * reserve0) / (reserve1 + amountIn);
+            amountOut = (amountIn * reserveAlpha) / (reserveBeta + amountIn);
         }
-
-        // 检查价格影响
-        uint256 newPrice = tokenIn == token0() ?
-            ((reserve1 - amountOut) * 1e18) / (reserve0 + amountIn) :
-            ((reserve0 - amountOut) * 1e18) / (reserve1 + amountIn);
-        _checkPriceImpact(currentPrice, newPrice);
 
         // 执行转账
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn), "Transfer in failed");
         require(IERC20(tokenOut).transfer(msg.sender, amountOut), "Transfer out failed");
 
         // 更新余额
-        if (tokenIn == token0()) {
-            tokenBalances[token0()] += amountIn;
-            tokenBalances[token1()] -= amountOut;
+        if (tokenIn == alpha) {
+            tokenBalances[alpha] += amountIn;
+            tokenBalances[beta] -= amountOut;
         } else {
-            tokenBalances[token1()] += amountIn;
-            tokenBalances[token0()] -= amountOut;
+            tokenBalances[beta] += amountIn;
+            tokenBalances[alpha] -= amountOut;
         }
 
         emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
-        _updateReserves();
 
         return amountOut;
     }
 
-    function getRequiredAmount1(uint256 amount0) public view override returns (uint256) {
-        if (!isInitialized()) {
-            return amount0; // 1:1 比例用于初始化
+    function getRequiredAmountBeta(uint256 amountAlpha) public view returns (uint256) {
+        if (!_initialized) {
+            return amountAlpha; // 1:1 比例用于初始化
         }
         
-        uint256 balance0 = tokenBalances[token0()];
-        uint256 balance1 = tokenBalances[token1()];
-        require(balance0 > 0 && balance1 > 0, "Pool is empty");
+        uint256 balanceAlpha = tokenBalances[alpha];
+        uint256 balanceBeta = tokenBalances[beta];
+        require(balanceAlpha > 0 && balanceBeta > 0, "Pool is empty");
         
-        return (amount0 * balance1) / balance0;
-    }
-
-    function getReserves() public view override returns (uint256, uint256) {
-        return (tokenBalances[token0()], tokenBalances[token1()]);
+        return (amountAlpha * balanceBeta) / balanceAlpha;
     }
 }
