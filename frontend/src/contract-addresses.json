@@ -1,5 +1,12 @@
 {
-  "token0": "0xc5a5C42992dECbae36851359345FE25997F5C42d",
-  "token1": "0x67d269191c92Caf3cD7723F116c85e6E9bf55933",
-  "pool": "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E"
+  "tokens": {
+    "alpha": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    "beta": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    "gamma": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+  },
+  "pools": {
+    "alphaBeta": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+    "betaGamma": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+    "gammaAlpha": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853"
+  }
 }

@@ -5,14 +5,14 @@ import { ChevronDown } from 'react-feather';
 
 // Token icons mapping
 const tokenIcons = {
-  ALPHA: '/images/tokens/alpha.png',
-  BETA: '/images/tokens/beta.png',
-  GAMMA: '/images/tokens/gamma.png',
+  ALPHA: '../../assets/tokens/alpha.png',
+  BETA: '../../assets/tokens/beta.png',
+  GAMMA: '../../assets/tokens/gamma.png',
 };
 
 // Utility function to get token icon
 const getTokenIcon = (symbol) => {
-  return tokenIcons[symbol] || '/images/tokens/default.png';
+  return tokenIcons[symbol] || '../../assets/tokens/default.png';
 };
 
 const TokenSelectContainer = styled.div`

@@ -6,21 +6,21 @@ async function main() {
 
   // 部署 Alpha 代币
   const Alpha = await hre.ethers.getContractFactory("NewToken");
-  const alpha = await Alpha.deploy("Alpha Token", "ALPHA");
+  const alpha = await Alpha.deploy("Alpha Token", "ALPHA", "https://api.example.com/token/alpha");
   await alpha.waitForDeployment();
   const alphaAddress = await alpha.getAddress();
   console.log("Alpha Token deployed to:", alphaAddress);
 
   // 部署 Beta 代币
   const Beta = await hre.ethers.getContractFactory("NewToken");
-  const beta = await Beta.deploy("Beta Token", "BETA");
+  const beta = await Beta.deploy("Beta Token", "BETA", "https://api.example.com/token/beta");
   await beta.waitForDeployment();
   const betaAddress = await beta.getAddress();
   console.log("Beta Token deployed to:", betaAddress);
 
   // 部署 Gamma 代币
   const Gamma = await hre.ethers.getContractFactory("NewToken");
-  const gamma = await Gamma.deploy("Gamma Token", "GAMMA");
+  const gamma = await Gamma.deploy("Gamma Token", "GAMMA", "https://api.example.com/token/gamma");
   await gamma.waitForDeployment();
   const gammaAddress = await gamma.getAddress();
   console.log("Gamma Token deployed to:", gammaAddress);
