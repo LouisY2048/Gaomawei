@@ -2,16 +2,26 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./NewToken.sol";
 import "./LPToken.sol";
 
-contract Pool_GA {
+contract Pool_GA is Ownable, ReentrancyGuard {
     // 状态变量
     address public immutable gamma;
     address public immutable alpha;
     LPToken public immutable lpToken;
     mapping(address => uint256) private tokenBalances;
     bool private _initialized;
+
+    // 添加交易费用相关变量
+    uint256 public constant FEE_PERCENT = 200; // 2% = 200/10000
+    uint256 public constant FEE_DENOMINATOR = 10000;
+    uint256 public totalFeesCollected;
+    
+    // 添加费用分配事件
+    event FeesDistributed(uint256 totalAmount, uint256 timestamp);
 
     // 事件
     event PoolInitialized(
@@ -90,33 +100,31 @@ contract Pool_GA {
 
     function addLiquidity(uint256 amountGamma) external whenInitialized returns (uint256) {
         require(amountGamma > 0, "Zero amount");
+        require(IERC20(gamma).balanceOf(msg.sender) >= amountGamma, "Insufficient Gamma balance");
         
-        uint256 amountAlpha = getRequiredAmountAlpha(amountGamma);
-        require(amountAlpha > 0, "Invalid amountAlpha");
+        // 计算需要的Alpha数量
+        uint256 requiredAmountAlpha = getRequiredAmountAlpha(amountGamma);
+        require(IERC20(alpha).balanceOf(msg.sender) >= requiredAmountAlpha, "Insufficient Alpha balance");
         
-        // 转入代币
-        require(IERC20(gamma).transferFrom(msg.sender, address(this), amountGamma), "Transfer Gamma failed");
-        require(IERC20(alpha).transferFrom(msg.sender, address(this), amountAlpha), "Transfer Alpha failed");
+        // 检查授权
+        require(IERC20(gamma).allowance(msg.sender, address(this)) >= amountGamma, "Gamma allowance too low");
+        require(IERC20(alpha).allowance(msg.sender, address(this)) >= requiredAmountAlpha, "Alpha allowance too low");
+        
+        // 转账代币
+        require(IERC20(gamma).transferFrom(msg.sender, address(this), amountGamma), "Gamma transfer failed");
+        require(IERC20(alpha).transferFrom(msg.sender, address(this), requiredAmountAlpha), "Alpha transfer failed");
         
         // 更新余额
         tokenBalances[gamma] += amountGamma;
-        tokenBalances[alpha] += amountAlpha;
-        
-        // 计算LP代币数量
-        uint256 totalLPSupply = lpToken.totalSupply();
-        uint256 amountLP;
-        if (totalLPSupply == 0) {
-            amountLP = amountGamma;
-        } else {
-            amountLP = (amountGamma * totalLPSupply) / tokenBalances[gamma];
-        }
+        tokenBalances[alpha] += requiredAmountAlpha;
         
         // 铸造LP代币
-        lpToken.mint(msg.sender, amountLP);
+        uint256 lpAmount = amountGamma; // 使用gamma数量作为LP代币数量
+        lpToken.mint(msg.sender, lpAmount);
         
-        emit LiquidityAdded(msg.sender, amountGamma, amountAlpha, amountLP);
+        emit LiquidityAdded(msg.sender, amountGamma, requiredAmountAlpha, lpAmount);
         
-        return amountLP;
+        return lpAmount;
     }
 
     function removeLiquidity(uint256 lpAmount) external whenInitialized returns (uint256, uint256) {
@@ -170,21 +178,27 @@ contract Pool_GA {
             amountOut = (amountIn * reserveGamma) / (reserveAlpha + amountIn);
         }
 
+        // 计算交易费用
+        uint256 feeAmount = (amountIn * FEE_PERCENT) / FEE_DENOMINATOR;
+        uint256 amountInAfterFee = amountIn - feeAmount;
+
         // 执行转账
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn), "Transfer in failed");
         require(IERC20(tokenOut).transfer(msg.sender, amountOut), "Transfer out failed");
 
         // 更新余额
         if (tokenIn == gamma) {
-            tokenBalances[gamma] += amountIn;
+            tokenBalances[gamma] += amountInAfterFee;
             tokenBalances[alpha] -= amountOut;
         } else {
-            tokenBalances[alpha] += amountIn;
+            tokenBalances[alpha] += amountInAfterFee;
             tokenBalances[gamma] -= amountOut;
         }
 
-        emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
+        // 更新总费用
+        totalFeesCollected += feeAmount;
 
+        emit Swap(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
         return amountOut;
     }
 
@@ -198,5 +212,54 @@ contract Pool_GA {
         require(balanceGamma > 0 && balanceAlpha > 0, "Pool is empty");
         
         return (amountGamma * balanceAlpha) / balanceGamma;
+    }
+
+    // 添加分配费用的函数
+    function distributeFees() external nonReentrant {
+        require(totalFeesCollected > 0, "No fees to distribute");
+        
+        uint256 totalLPSupply = lpToken.totalSupply();
+        require(totalLPSupply > 0, "No liquidity providers");
+        
+        // 获取所有LP代币持有者
+        uint256 totalFees = totalFeesCollected;
+        totalFeesCollected = 0; // 重置费用计数器
+        
+        // 获取代币合约
+        IERC20 gammaToken = IERC20(gamma);
+        IERC20 alphaToken = IERC20(alpha);
+        
+        // 计算每个代币的费用
+        uint256 gammaFees = (totalFees * tokenBalances[gamma]) / (tokenBalances[gamma] + tokenBalances[alpha]);
+        uint256 alphaFees = totalFees - gammaFees;
+        
+        // 获取所有LP代币持有者
+        uint256[] memory tokenIds = lpToken.tokensOfOwner(address(this));
+        
+        // 分配费用给LP代币持有者
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            uint256 tokenId = tokenIds[i];
+            address holder = lpToken.ownerOf(tokenId);
+            uint256 holderBalance = lpToken.balanceOf(holder);
+            uint256 share = (holderBalance * 1e18) / totalLPSupply;
+            
+            // 分配gamma代币费用
+            if (gammaFees > 0) {
+                uint256 gammaShare = (gammaFees * share) / 1e18;
+                if (gammaShare > 0) {
+                    require(gammaToken.transfer(holder, gammaShare), "Gamma fee transfer failed");
+                }
+            }
+            
+            // 分配alpha代币费用
+            if (alphaFees > 0) {
+                uint256 alphaShare = (alphaFees * share) / 1e18;
+                if (alphaShare > 0) {
+                    require(alphaToken.transfer(holder, alphaShare), "Alpha fee transfer failed");
+                }
+            }
+        }
+        
+        emit FeesDistributed(totalFees, block.timestamp);
     }
 }

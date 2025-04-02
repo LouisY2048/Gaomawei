@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract LPToken is ERC20, Pausable, Ownable {
+contract LPToken is ERC721Enumerable, Pausable, Ownable {
     // 错误定义
     error CallerNotPool();
     error NotInitialized();
@@ -20,15 +21,17 @@ contract LPToken is ERC20, Pausable, Ownable {
     // 状态变量
     bool private _initialized;
     address private _pool;
+    uint256 private _tokenIdCounter;
     
     // 事件定义
     event PoolSet(address indexed pool);
-    event TokenMinted(address indexed to, uint256 amount);
-    event TokenBurned(address indexed from, uint256 amount);
-    event TransferRestricted(address indexed from, address indexed to, uint256 amount);
+    event TokenMinted(address indexed to, uint256 tokenId, uint256 amount);
+    event TokenBurned(address indexed from, uint256 tokenId);
+    event TransferRestricted(address indexed from, address indexed to, uint256 tokenId);
     
-    constructor() ERC20("LP Token", "LP") Ownable(msg.sender) {
+    constructor() ERC721("LP Token", "LP") Ownable(msg.sender) {
         _initialized = false;
+        _tokenIdCounter = 0;
     }
 
     /**
@@ -77,22 +80,27 @@ contract LPToken is ERC20, Pausable, Ownable {
         require(amount > 0, "Zero amount");
         require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
         
-        _mint(to, amount);
-        emit TokenMinted(to, amount);
+        // 为每个代币铸造一个唯一的tokenId
+        for (uint256 i = 0; i < amount; i++) {
+            _tokenIdCounter++;
+            _safeMint(to, _tokenIdCounter);
+        }
+        
+        emit TokenMinted(to, _tokenIdCounter, amount);
     }
 
     /**
      * @dev 销毁LP代币
      * @param from 持有者地址
-     * @param amount 销毁数量
+     * @param tokenId 代币ID
      */
-    function burn(address from, uint256 amount) external whenInitialized onlyPool {
+    function burn(address from, uint256 tokenId) external whenInitialized onlyPool {
         require(from != address(0), "Invalid sender");
-        require(amount > 0, "Zero amount");
-        require(balanceOf(from) >= amount, "Insufficient balance");
+        require(_exists(tokenId), "Token does not exist");
+        require(ownerOf(tokenId) == from, "Not token owner");
         
-        _burn(from, amount);
-        emit TokenBurned(from, amount);
+        _burn(tokenId);
+        emit TokenBurned(from, tokenId);
     }
 
     /**
@@ -103,7 +111,7 @@ contract LPToken is ERC20, Pausable, Ownable {
     }
 
     /**
-     * @dev 恢复合约
+     * @dev 取消暂停合约
      */
     function unpause() external onlyOwner {
         _unpause();
@@ -117,31 +125,49 @@ contract LPToken is ERC20, Pausable, Ownable {
     }
 
     /**
-     * @dev 获取初始化状态
+     * @dev 检查合约是否已初始化
      */
     function initialized() external view returns (bool) {
         return _initialized;
     }
 
     /**
-     * @dev 重写转账函数，添加最小转账金额检查
+     * @dev 重写 _update 函数以支持暂停功能
      */
-    function transfer(address to, uint256 amount) public override whenNotPaused returns (bool) {
-        if (amount < MINIMUM_TRANSFER_AMOUNT) {
-            emit TransferRestricted(msg.sender, to, amount);
-            revert TransferAmountTooLow();
-        }
-        return super.transfer(to, amount);
+    function _update(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal virtual override(ERC721, ERC721Enumerable) whenNotPaused {
+        super._update(from, to, tokenId, batchSize);
     }
 
     /**
-     * @dev 重写授权转账函数，添加最小转账金额检查
+     * @dev 重写 supportsInterface 函数以支持 ERC721Enumerable
      */
-    function transferFrom(address from, address to, uint256 amount) public override whenNotPaused returns (bool) {
-        if (amount < MINIMUM_TRANSFER_AMOUNT) {
-            emit TransferRestricted(from, to, amount);
-            revert TransferAmountTooLow();
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev 获取用户持有的所有代币ID
+     * @param owner 用户地址
+     * @return tokenIds 代币ID数组
+     */
+    function tokensOfOwner(address owner) external view returns (uint256[] memory) {
+        uint256 tokenCount = balanceOf(owner);
+        uint256[] memory tokenIds = new uint256[](tokenCount);
+        
+        for (uint256 i = 0; i < tokenCount; i++) {
+            tokenIds[i] = tokenOfOwnerByIndex(owner, i);
         }
-        return super.transferFrom(from, to, amount);
+        
+        return tokenIds;
     }
 }
