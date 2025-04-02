@@ -17,6 +17,13 @@ contract Pool is LPToken, ReentrancyGuard {
 
     mapping(address => uint256) tokenBalances;
 
+    uint256 public constant FEE_PERCENTAGE = 100; // 1% 的交易费用
+    uint256 public constant FEE_DENOMINATOR = 10000; // 用于计算百分比的基数
+    mapping(address => uint256) public rewards; // 记录每个地址的奖励
+
+    mapping(address => bool) public isLiquidityProvider;
+    address[] public liquidityProviders;
+
     event AddedLiquidity(
         uint256 indexed lpToken,
         address token0,
@@ -63,15 +70,22 @@ contract Pool is LPToken, ReentrancyGuard {
         require(tokenOut == i_token0_address || tokenOut == i_token1_address, "Invalid token");
         require(amountIn > 0, "Zero amount");
 
-        uint256 amountOut = getAmountOut(tokenIn, amountIn, tokenOut);
+        // 计算交易费用
+        uint256 fee = (amountIn * FEE_PERCENTAGE) / FEE_DENOMINATOR;
+        uint256 amountInAfterFee = amountIn - fee;
+        
+        uint256 amountOut = getAmountOut(tokenIn, amountInAfterFee, tokenOut);
 
         // 交换代币
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn), "Swap Failed");
         require(IERC20(tokenOut).transfer(msg.sender, amountOut), "Swap Failed");
         
         // 更新池余额
-        tokenBalances[tokenIn] += amountIn;
+        tokenBalances[tokenIn] += amountInAfterFee;
         tokenBalances[tokenOut] -= amountOut;
+        
+        // 将交易费用添加到奖励池
+        _distributeFee(tokenIn, fee);
 
         emit Swapped(tokenIn, amountIn, tokenOut, amountOut);
     }
@@ -109,6 +123,12 @@ contract Pool is LPToken, ReentrancyGuard {
         }
         _mint(msg.sender, amountLP);
 
+        // 更新流动性提供者列表
+        if (!isLiquidityProvider[msg.sender]) {
+            isLiquidityProvider[msg.sender] = true;
+            liquidityProviders.push(msg.sender);
+        }
+
         emit AddedLiquidity(amountLP, i_token0_address, amount0, i_token1_address, amount1);
     }
 
@@ -133,11 +153,84 @@ contract Pool is LPToken, ReentrancyGuard {
         require(i_token0.transfer(msg.sender, amount0), "Transfer token0 failed");
         require(i_token1.transfer(msg.sender, amount1), "Transfer token1 failed");
         
+        // 如果用户不再持有LP代币，从提供者列表中移除
+        if (balanceOf(msg.sender) == 0) {
+            isLiquidityProvider[msg.sender] = false;
+            // 从数组中移除（这里简化处理，实际项目中需要更复杂的逻辑）
+            for (uint256 i = 0; i < liquidityProviders.length; i++) {
+                if (liquidityProviders[i] == msg.sender) {
+                    liquidityProviders[i] = liquidityProviders[liquidityProviders.length - 1];
+                    liquidityProviders.pop();
+                    break;
+                }
+            }
+        }
+        
         emit RemovedLiquidity(lpAmount, i_token0_address, amount0, i_token1_address, amount1);
     }
 
     // 辅助函数，用于测试
     function getReserves() public view returns (uint256, uint256) {
         return (tokenBalances[i_token0_address], tokenBalances[i_token1_address]);
+    }
+
+    // 新增函数：分配交易费用给流动性提供者
+    function _distributeFee(address token, uint256 fee) internal {
+        uint256 totalLPSupply = totalSupply();
+        if (totalLPSupply == 0) return;
+        
+        uint256 rewardAmount = fee;
+        
+        for (uint256 i = 0; i < liquidityProviders.length; i++) {
+            address lpProvider = liquidityProviders[i];
+            uint256 lpBalance = balanceOf(lpProvider);
+            uint256 share = (lpBalance * rewardAmount) / totalLPSupply;
+            rewards[lpProvider] += share;
+        }
+    }
+    
+    // 新增函数：领取奖励
+    function claimRewards() public nonReentrant {
+        uint256 reward = rewards[msg.sender];
+        require(reward > 0, "No rewards to claim");
+        
+        rewards[msg.sender] = 0;
+        require(IERC20(i_token0_address).transfer(msg.sender, reward), "Reward transfer failed");
+    }
+    
+    // 新增函数：查询奖励
+    function getRewards(address account) public view returns (uint256) {
+        return rewards[account];
+    }
+
+    // 新增函数：查询流动性提供者的贡献度
+    function getLiquidityContribution(address provider) public view returns (
+        uint256 lpBalance,        // LP代币持有量
+        uint256 totalLPSupply,    // 总LP供应量
+        uint256 contribution      // 贡献度（百分比，精确到小数点后4位）
+    ) {
+        lpBalance = balanceOf(provider);
+        totalLPSupply = totalSupply();
+        
+        if (totalLPSupply == 0) {
+            contribution = 0;
+        } else {
+            // 计算贡献度百分比（乘以10000以保留4位小数）
+            contribution = (lpBalance * 10000) / totalLPSupply;
+        }
+        
+        return (lpBalance, totalLPSupply, contribution);
+    }
+    
+    // 新增函数：查询流动性提供者的奖励信息
+    function getRewardInfo(address provider) public view returns (
+        uint256 currentRewards,   // 当前可领取的奖励
+        uint256 lpBalance,        // LP代币持有量
+        uint256 contribution      // 贡献度（百分比，精确到小数点后4位）
+    ) {
+        currentRewards = rewards[provider];
+        (lpBalance, , contribution) = getLiquidityContribution(provider);
+        
+        return (currentRewards, lpBalance, contribution);
     }
 }

@@ -116,7 +116,9 @@ function App() {
                   <Balance 
                     balances={balances} 
                     poolBalances={poolBalances} 
-                    account={account} 
+                    account={account}
+                    pool={pool}
+                    web3={web3}
                   />
                   <div className="d-flex justify-content-center mt-3 mb-3">
                     <button 
