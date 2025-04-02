@@ -64,7 +64,7 @@ async function main() {
   const path = require('path');
   
   // 确保目录存在
-  const dir = path.join(__dirname, '../../frontend/src');
+  const dir = path.join(__dirname, '../../demo/src');
   if (!fs.existsSync(dir)){
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -73,7 +73,7 @@ async function main() {
     path.join(dir, 'contract-addresses.json'),
     JSON.stringify(addresses, null, 2)
   );
-  console.log("Contract addresses written to frontend/src/contract-addresses.json");
+  console.log("Contract addresses written to demo/src/contract-addresses.json");
 
   // 打印部署信息
   console.log("\nDeployment Summary:");

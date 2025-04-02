@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'react-feather';
+import PropTypes from 'prop-types';
 
 // Token icons mapping
 const tokenIcons = {
@@ -47,16 +48,17 @@ const TokenBalance = styled.span`
   color: ${({ theme }) => theme.text3};
 `;
 
-const TokenSelect = ({ 
+const TokenSelect = React.forwardRef(({ 
   token,
   balance,
   onClick,
   showBalance = true,
   showChevron = true,
-  size = 'medium'
-}) => {
+  size = 'medium',
+  ...props
+}, ref) => {
   return (
-    <TokenSelectContainer onClick={onClick}>
+    <TokenSelectContainer ref={ref} onClick={onClick} {...props}>
       <TokenIcon src={getTokenIcon(token.symbol)} alt={token.symbol} />
       <TokenSymbol>{token.symbol}</TokenSymbol>
       {showBalance && balance && (
@@ -65,7 +67,21 @@ const TokenSelect = ({
       {showChevron && <ChevronDown size={20} style={{ marginLeft: '8px' }} />}
     </TokenSelectContainer>
   );
+});
+
+TokenSelect.propTypes = {
+  token: PropTypes.shape({
+    symbol: PropTypes.string.isRequired,
+    address: PropTypes.string.isRequired,
+  }).isRequired,
+  balance: PropTypes.string,
+  onClick: PropTypes.func.isRequired,
+  showBalance: PropTypes.bool,
+  showChevron: PropTypes.bool,
+  size: PropTypes.oneOf(['small', 'medium', 'large']),
 };
+
+TokenSelect.displayName = 'TokenSelect';
 
 // Token Selection Modal
 const ModalOverlay = styled(motion.div)`
@@ -98,23 +114,25 @@ const ModalHeader = styled.div`
   margin-bottom: 16px;
 `;
 
-const ModalTitle = styled.h3`
-  margin: 0;
-  font-size: 18px;
+const ModalTitle = styled.h2`
+  font-size: 20px;
   font-weight: 600;
+  color: ${({ theme }) => theme.colors.text1};
+  margin: 0;
 `;
 
-const SearchInput = styled.input`
-  width: 100%;
-  padding: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border1};
-  border-radius: ${({ theme }) => theme.borderRadius.medium};
-  margin-bottom: 16px;
-  font-size: 16px;
-  outline: none;
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.text2};
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
 
-  &:focus {
-    border-color: ${({ theme }) => theme.colors.primary1};
+  &:hover {
+    color: ${({ theme }) => theme.colors.text1};
+    background: ${({ theme }) => theme.colors.bg3};
   }
 `;
 
@@ -124,22 +142,23 @@ const TokenList = styled.div`
   gap: 8px;
 `;
 
-const TokenOption = styled(motion.button)`
+const TokenItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 12px;
-  background: none;
-  border: 1px solid transparent;
   border-radius: ${({ theme }) => theme.borderRadius.medium};
   cursor: pointer;
-  width: 100%;
-  text-align: left;
+  transition: all 0.2s;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.bg1};
-    border-color: ${({ theme }) => theme.colors.border1};
+    background: ${({ theme }) => theme.colors.bg3};
   }
+
+  ${({ selected, theme }) =>
+    selected &&
+    `
+    background: ${theme.colors.bg3};
+  `}
 `;
 
 export const TokenSelectModal = ({ 
@@ -149,17 +168,6 @@ export const TokenSelectModal = ({
   tokens,
   selectedToken 
 }) => {
-  const [search, setSearch] = React.useState('');
-
-  const filteredTokens = React.useMemo(() => {
-    if (!search) return tokens;
-    const searchLower = search.toLowerCase();
-    return tokens.filter(token => 
-      token.symbol.toLowerCase().includes(searchLower) ||
-      token.name.toLowerCase().includes(searchLower)
-    );
-  }, [tokens, search]);
-
   if (!isOpen) return null;
 
   return (
@@ -173,47 +181,43 @@ export const TokenSelectModal = ({
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <ModalHeader>
-          <ModalTitle>Select a token</ModalTitle>
-          <button onClick={onClose}>×</button>
+          <ModalTitle>Select Token</ModalTitle>
+          <CloseButton onClick={onClose}>✕</CloseButton>
         </ModalHeader>
-        
-        <SearchInput
-          placeholder="Search by name or paste address"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          autoFocus
-        />
-
         <TokenList>
-          {filteredTokens.map(token => (
-            <TokenOption
+          {tokens.map((token) => (
+            <TokenItem
               key={token.address}
-              onClick={() => {
-                onSelect(token);
-                onClose();
-              }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
+              selected={selectedToken?.address === token.address}
+              onClick={() => onSelect(token)}
             >
               <TokenIcon src={getTokenIcon(token.symbol)} alt={token.symbol} />
-              <div>
-                <TokenSymbol>{token.symbol}</TokenSymbol>
-                <TokenBalance>{token.name}</TokenBalance>
-              </div>
-              {token.balance && (
-                <TokenBalance style={{ marginLeft: 'auto' }}>
-                  {parseFloat(token.balance).toFixed(4)}
-                </TokenBalance>
-              )}
-            </TokenOption>
+              <TokenSymbol>{token.symbol}</TokenSymbol>
+            </TokenItem>
           ))}
         </TokenList>
       </ModalContent>
     </ModalOverlay>
   );
+};
+
+TokenSelectModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSelect: PropTypes.func.isRequired,
+  tokens: PropTypes.arrayOf(
+    PropTypes.shape({
+      symbol: PropTypes.string.isRequired,
+      address: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  selectedToken: PropTypes.shape({
+    symbol: PropTypes.string.isRequired,
+    address: PropTypes.string.isRequired,
+  }),
 };
 
 export default TokenSelect; 

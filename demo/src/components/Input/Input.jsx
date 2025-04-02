@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { transparentize } from 'polished';
+import PropTypes from 'prop-types';
 
 const InputWrapper = styled.div`
   display: flex;
@@ -69,7 +70,7 @@ const ErrorMessage = styled.span`
   margin-top: 4px;
 `;
 
-const Input = ({ 
+const Input = React.forwardRef(({ 
   label,
   placeholder,
   value,
@@ -79,12 +80,13 @@ const Input = ({
   disabled = false,
   rightElement,
   ...props 
-}) => {
+}, ref) => {
   return (
     <InputWrapper>
       {label && <Label>{label}</Label>}
       <InputContainer error={error}>
         <StyledInput
+          ref={ref}
           type={type}
           placeholder={placeholder}
           value={value}
@@ -97,6 +99,19 @@ const Input = ({
       {error && <ErrorMessage>{error}</ErrorMessage>}
     </InputWrapper>
   );
+});
+
+Input.propTypes = {
+  label: PropTypes.string,
+  placeholder: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func.isRequired,
+  type: PropTypes.string,
+  error: PropTypes.string,
+  disabled: PropTypes.bool,
+  rightElement: PropTypes.node,
 };
+
+Input.displayName = 'Input';
 
 export default Input; 

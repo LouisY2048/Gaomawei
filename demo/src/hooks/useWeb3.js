@@ -1,16 +1,52 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useWeb3React } from '@web3-react/core';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { Web3ReactProvider, useWeb3React } from '@web3-react/core';
+import { InjectedConnector } from '@web3-react/injected-connector';
 import { ethers } from 'ethers';
 import { TokenABI, PoolABI } from '../constants/abis';
 import { TOKENS, POOLS } from '../constants';
 
+const Web3Context = createContext(null);
+
+// 配置支持的链ID，包括本地测试网
+const injected = new InjectedConnector({
+  supportedChainIds: [1, 3, 4, 5, 42, 31337], // 31337 是本地 Hardhat 网络的链ID
+});
+
 export const useWeb3 = () => {
-  const { account, library, active } = useWeb3React();
+  const context = useContext(Web3Context);
+  if (!context) {
+    throw new Error('useWeb3 must be used within a Web3Provider');
+  }
+  return context;
+};
+
+const Web3ContextProvider = ({ children }) => {
+  const { account, library, active, activate, deactivate } = useWeb3React();
   const [web3, setWeb3] = useState(null);
   const [contracts, setContracts] = useState({});
   const [balances, setBalances] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // 连接钱包
+  const connect = async () => {
+    try {
+      await activate(injected);
+    } catch (error) {
+      console.error('Failed to connect:', error);
+      setError('Failed to connect wallet');
+    }
+  };
+
+  // 断开连接
+  const disconnect = async () => {
+    try {
+      await deactivate();
+    } catch (error) {
+      console.error('Failed to disconnect:', error);
+      setError('Failed to disconnect wallet');
+    }
+  };
 
   // Initialize Web3 and contracts
   useEffect(() => {
@@ -71,13 +107,40 @@ export const useWeb3 = () => {
     }
   }, [active, loadBalances]);
 
-  return {
+  const value = {
     web3,
     account,
     contracts,
     balances,
     loading,
     error,
-    loadBalances
+    loadBalances,
+    connect,
+    disconnect,
+    isConnected: active
   };
+
+  return (
+    <Web3Context.Provider value={value}>
+      {children}
+    </Web3Context.Provider>
+  );
+};
+
+// Function to get Ethereum provider
+const getLibrary = (provider) => {
+  const library = new ethers.providers.Web3Provider(provider);
+  library.pollingInterval = 12000; // 12 seconds
+  return library;
+};
+
+// Main Web3Provider component
+export const Web3Provider = ({ children }) => {
+  return (
+    <Web3ReactProvider getLibrary={getLibrary}>
+      <Web3ContextProvider>
+        {children}
+      </Web3ContextProvider>
+    </Web3ReactProvider>
+  );
 }; 
