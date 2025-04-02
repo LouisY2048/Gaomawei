@@ -75,8 +75,8 @@ const StyledButton = styled.button`
     font-size: 18px;
   `}
 
-  ${({ fullWidth }) =>
-    fullWidth &&
+  ${({ $fullWidth }) =>
+    $fullWidth &&
     `
     width: 100%;
   `}
@@ -121,7 +121,7 @@ const Button = React.forwardRef(({
       ref={ref}
       variant={variant}
       size={size}
-      fullWidth={fullWidth}
+      $fullWidth={fullWidth}
       disabled={disabled}
       {...props}
     >

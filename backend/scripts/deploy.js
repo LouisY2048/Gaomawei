@@ -64,7 +64,7 @@ async function main() {
   const path = require('path');
   
   // 确保目录存在
-  const dir = path.join(__dirname, '../../demo/src');
+  const dir = path.join(__dirname, '../../demo/src/contracts');
   if (!fs.existsSync(dir)){
     fs.mkdirSync(dir, { recursive: true });
   }

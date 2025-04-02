@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useWeb3 } from '../../hooks/useWeb3';
 import { usePools } from '../../hooks/usePools';
@@ -7,6 +7,8 @@ import PropTypes from 'prop-types';
 import Card from '../Card/Card';
 import Button from '../Button/Button';
 import CreatePoolModal from './CreatePoolModal';
+import Navigation from '../Navigation/Navigation';
+import CONTRACT_ADDRESSES from '../../contracts/contract-addresses.json';
 
 const PoolsContainer = styled.div`
   width: 100%;
@@ -138,7 +140,7 @@ const Message = styled.div`
   justify-content: center;
   gap: 8px;
   padding: 24px;
-  color: ${({ theme, error }) => error ? theme.colors.error : theme.colors.text2};
+  color: ${({ theme, $error }) => $error ? theme.colors.error : theme.colors.text2};
   background: ${({ theme }) => theme.colors.bg2};
   border-radius: ${({ theme }) => theme.borderRadius.medium};
   text-align: center;
@@ -167,6 +169,7 @@ const Pools = () => {
     try {
       await createPool(token0Address, token1Address, fee);
       setIsCreatePoolModalOpen(false);
+      refreshPools(); // Refresh pools after creating a new one
     } catch (error) {
       console.error('Error creating pool:', error);
       // TODO: Show error message to user
@@ -178,92 +181,114 @@ const Pools = () => {
     pool.token1.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Add debug logs
+  console.log('Pools:', pools);
+  console.log('FilteredPools:', filteredPools);
+
   return (
-    <PoolsContainer>
-      <Header>
-        <Title>Pools</Title>
-        <HeaderActions>
-          {isConnected ? (
-            <>
-              <Button variant="secondary" onClick={refreshPools}>
-                <RefreshCw size={18} />
-                Refresh
-              </Button>
-              <Button onClick={() => setIsCreatePoolModalOpen(true)}>
-                <Plus size={18} />
-                Create Pool
-              </Button>
-              <ConnectButton variant="secondary" onClick={disconnect}>
-                Disconnect
+    <>
+      <Navigation />
+      <PoolsContainer>
+        <Header>
+          <Title>Pools</Title>
+          <HeaderActions>
+            {isConnected ? (
+              <>
+                <Button variant="secondary" onClick={refreshPools}>
+                  <RefreshCw size={18} />
+                  Refresh
+                </Button>
+                <Button onClick={() => setIsCreatePoolModalOpen(true)}>
+                  <Plus size={18} />
+                  Create Pool
+                </Button>
+                <ConnectButton variant="secondary" onClick={disconnect}>
+                  Disconnect
+                </ConnectButton>
+              </>
+            ) : (
+              <ConnectButton onClick={connect}>
+                Connect Wallet
               </ConnectButton>
-            </>
-          ) : (
-            <ConnectButton onClick={connect}>
-              Connect Wallet
-            </ConnectButton>
-          )}
-        </HeaderActions>
-      </Header>
+            )}
+          </HeaderActions>
+        </Header>
 
-      {isConnected ? (
-        <>
-          <SearchBar>
-            <Search size={20} color="#6E7787" />
-            <SearchInput
-              placeholder="Search pools by token symbol"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </SearchBar>
+        {isConnected ? (
+          <>
+            <SearchBar>
+              <Search size={20} color="#6E7787" />
+              <SearchInput
+                placeholder="Search pools by token symbol"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </SearchBar>
 
-          <PoolList>
             {loading ? (
               <Message>
-                <LoadingSpinner size={24} />
+                <LoadingSpinner size={20} />
                 Loading pools...
               </Message>
             ) : error ? (
-              <Message error>
-                <AlertCircle size={24} />
+              <Message $error>
+                <AlertCircle size={20} />
                 {error}
               </Message>
-            ) : filteredPools.length > 0 ? (
-              filteredPools.map((pool) => (
-                <PoolCard key={pool.address}>
-                  <PoolHeader>
-                    <TokenPair>
-                      <TokenIcon src={`/images/tokens/${pool.token0.symbol.toLowerCase()}.png`} alt={pool.token0.symbol} />
-                      <TokenIcon src={`/images/tokens/${pool.token1.symbol.toLowerCase()}.png`} alt={pool.token1.symbol} />
-                      <TokenSymbol>{pool.token0.symbol}/{pool.token1.symbol}</TokenSymbol>
-                    </TokenPair>
-                  </PoolHeader>
-                  <PoolReserves>
-                    <ReserveItem>
-                      <ReserveLabel>{pool.token0.symbol}:</ReserveLabel>
-                      <ReserveValue>{pool.token0.reserve}</ReserveValue>
-                    </ReserveItem>
-                    <ReserveItem>
-                      <ReserveLabel>{pool.token1.symbol}:</ReserveLabel>
-                      <ReserveValue>{pool.token1.reserve}</ReserveValue>
-                    </ReserveItem>
-                  </PoolReserves>
-                </PoolCard>
-              ))
+            ) : filteredPools.length === 0 ? (
+              <Message>
+                <Search size={20} />
+                No pools found
+              </Message>
             ) : (
-              <Message>No pools found</Message>
+              <PoolList>
+                {filteredPools.map((pool) => (
+                  <PoolCard key={pool.address}>
+                    <PoolHeader>
+                      <TokenPair>
+                        <TokenIcon 
+                          src={`/tokens/${pool.token0.symbol.toLowerCase()}.png`} 
+                          alt={pool.token0.symbol}
+                          onError={(e) => {
+                            e.target.src = '/tokens/default.png';
+                          }}
+                        />
+                        <TokenIcon 
+                          src={`/tokens/${pool.token1.symbol.toLowerCase()}.png`} 
+                          alt={pool.token1.symbol}
+                          onError={(e) => {
+                            e.target.src = '/tokens/default.png';
+                          }}
+                        />
+                        <TokenSymbol>{pool.token0.symbol}/{pool.token1.symbol}</TokenSymbol>
+                      </TokenPair>
+                    </PoolHeader>
+                    <PoolReserves>
+                      <ReserveItem>
+                        <ReserveLabel>{pool.token0.symbol} Reserve:</ReserveLabel>
+                        <ReserveValue>{pool.token0.reserve}</ReserveValue>
+                      </ReserveItem>
+                      <ReserveItem>
+                        <ReserveLabel>{pool.token1.symbol} Reserve:</ReserveLabel>
+                        <ReserveValue>{pool.token1.reserve}</ReserveValue>
+                      </ReserveItem>
+                    </PoolReserves>
+                  </PoolCard>
+                ))}
+              </PoolList>
             )}
-          </PoolList>
-        </>
-      ) : (
-        <Message>Please connect your wallet to view pools</Message>
-      )}
+          </>
+        ) : (
+          <Message>Please connect your wallet to view pools</Message>
+        )}
 
-      <CreatePoolModal
-        isOpen={isCreatePoolModalOpen}
-        onClose={() => setIsCreatePoolModalOpen(false)}
-        onSubmit={handleCreatePool}
-      />
-    </PoolsContainer>
+        <CreatePoolModal
+          isOpen={isCreatePoolModalOpen}
+          onClose={() => setIsCreatePoolModalOpen(false)}
+          onSubmit={handleCreatePool}
+        />
+      </PoolsContainer>
+    </>
   );
 };
 

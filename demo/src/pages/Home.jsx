@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'react-feather';
 import Card from '../components/Card/Card.jsx';
 import Button from '../components/Button/Button.jsx';
-import { Web3Connect } from '../components/Web3Connect/Web3Connect.jsx';
 import Navigation from '../components/Navigation/Navigation.jsx';
 
 const PageWrapper = styled.div`
@@ -163,9 +162,7 @@ const Home = () => {
   return (
     <PageWrapper>
       <Nav>
-        <Logo>Gaomawei DEX</Logo>
         <Navigation />
-        <Web3Connect />
       </Nav>
 
       <PageContainer>

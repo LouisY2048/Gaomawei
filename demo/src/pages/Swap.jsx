@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { ArrowDown, Settings } from 'react-feather';
 import Card from '../components/Card/Card.jsx';
 import Button from '../components/Button/Button.jsx';
-import { Web3Connect } from '../components/Web3Connect/Web3Connect.jsx';
 import Navigation from '../components/Navigation/Navigation.jsx';
 import SettingsModal from '../components/Settings/SettingsModal.jsx';
 import TokenSelect from '../components/TokenSelect/TokenSelect.jsx';
@@ -151,9 +150,7 @@ const Swap = () => {
   return (
     <PageWrapper>
       <Nav>
-        <Logo>Gaomawei DEX</Logo>
         <Navigation />
-        <Web3Connect />
       </Nav>
 
       <SwapCard>

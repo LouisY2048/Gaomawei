@@ -13,10 +13,37 @@ import ERC20_ABI from '../contracts/ERC20.json';
 // Helper function to format balance
 const formatBalance = (balance, decimals = 18) => {
   try {
-    return parseFloat(ethers.utils.formatUnits(balance, decimals)).toFixed(6);
+    return ethers.utils.formatUnits(balance, decimals);
   } catch (error) {
     console.error('Error formatting balance:', error);
     return '0.00';
+  }
+};
+
+// Helper function to get token addresses and pool type based on pool name
+const getPoolInfo = (poolName) => {
+  const tokens = CONTRACT_ADDRESSES.tokens;
+  switch (poolName) {
+    case 'alphaBeta':
+      return {
+        type: 'AB',
+        token0: { address: tokens.alpha, name: 'alpha' },
+        token1: { address: tokens.beta, name: 'beta' }
+      };
+    case 'betaGamma':
+      return {
+        type: 'BG',
+        token0: { address: tokens.beta, name: 'beta' },
+        token1: { address: tokens.gamma, name: 'gamma' }
+      };
+    case 'gammaAlpha':
+      return {
+        type: 'GA',
+        token0: { address: tokens.gamma, name: 'gamma' },
+        token1: { address: tokens.alpha, name: 'alpha' }
+      };
+    default:
+      throw new Error(`Unknown pool name: ${poolName}`);
   }
 };
 
@@ -37,55 +64,59 @@ export const usePools = () => {
       setError(null);
 
       // Get all pools from contract-addresses.json
-      const poolEntries = Object.entries(CONTRACT_ADDRESSES.pools);
+      const poolAddresses = CONTRACT_ADDRESSES.pools;
       
       // Get details for each pool
       const poolsData = await Promise.all(
-        poolEntries.map(async ([poolName, address]) => {
+        Object.entries(poolAddresses).map(async ([poolName, address]) => {
           try {
-            const pool = new ethers.Contract(address, POOL_ABI, web3);
+            console.log(`Loading pool ${poolName} at address ${address}`);
             
-            // Get token addresses
-            const [token0Address, token1Address] = await Promise.all([
-              pool.token0(),
-              pool.token1()
-            ]);
+            // Get pool info based on pool name
+            const poolInfo = getPoolInfo(poolName);
+            
+            // Create contract instances
+            const pool = new ethers.Contract(address, POOL_ABI.abi, web3);
+            
+            // Create token contracts
+            const token0Contract = new ethers.Contract(poolInfo.token0.address, ERC20_ABI.abi, web3);
+            const token1Contract = new ethers.Contract(poolInfo.token1.address, ERC20_ABI.abi, web3);
 
-            // Get token contracts
-            const token0 = new ethers.Contract(token0Address, ERC20_ABI, web3);
-            const token1 = new ethers.Contract(token1Address, ERC20_ABI, web3);
-
-            // Get token details
+            // Get token details and reserves
             const [
               token0Symbol,
               token1Symbol,
               token0Decimals,
               token1Decimals,
-              reserve0,
-              reserve1
+              reserves
             ] = await Promise.all([
-              token0.symbol(),
-              token1.symbol(),
-              token0.decimals(),
-              token1.decimals(),
-              pool.reserve0(),
-              pool.reserve1()
+              token0Contract.symbol(),
+              token1Contract.symbol(),
+              token0Contract.decimals(),
+              token1Contract.decimals(),
+              pool.getReserves()
             ]);
+
+            console.log(`Pool ${poolName} reserves:`, {
+              [`reserve${poolInfo.token0.name}`]: reserves[0].toString(),
+              [`reserve${poolInfo.token1.name}`]: reserves[1].toString()
+            });
 
             return {
               name: poolName,
               address,
+              type: poolInfo.type,
               token0: {
-                address: token0Address,
+                address: poolInfo.token0.address,
                 symbol: token0Symbol,
                 decimals: token0Decimals,
-                reserve: formatBalance(reserve0, token0Decimals)
+                reserve: formatBalance(reserves[0], token0Decimals)
               },
               token1: {
-                address: token1Address,
+                address: poolInfo.token1.address,
                 symbol: token1Symbol,
                 decimals: token1Decimals,
-                reserve: formatBalance(reserve1, token1Decimals)
+                reserve: formatBalance(reserves[1], token1Decimals)
               }
             };
           } catch (err) {
@@ -97,6 +128,7 @@ export const usePools = () => {
 
       // Filter out failed pools
       const validPools = poolsData.filter(pool => pool !== null);
+      console.log('Valid pools loaded:', validPools);
       setPools(validPools);
 
       if (validPools.length === 0) {
@@ -125,7 +157,7 @@ export const usePools = () => {
       const signer = web3.getSigner();
       const factory = new ethers.Contract(
         CONTRACT_ADDRESSES.factory,
-        FACTORY_ABI,
+        FACTORY_ABI.abi,
         signer
       );
 
@@ -138,16 +170,16 @@ export const usePools = () => {
     }
   };
 
-  const addLiquidity = async (poolAddress, amount0, amount1) => {
+  const addLiquidity = async (poolAddress, amount0) => {
     if (!web3 || !account || !isConnected) {
       throw new Error('Please connect your wallet');
     }
 
     try {
       const signer = web3.getSigner();
-      const pool = new ethers.Contract(poolAddress, POOL_ABI, signer);
+      const pool = new ethers.Contract(poolAddress, POOL_ABI.abi, signer);
 
-      const tx = await pool.addLiquidity(amount0, amount1);
+      const tx = await pool.addLiquidity(amount0);
       await tx.wait();
       await loadPools();
     } catch (err) {
@@ -163,7 +195,7 @@ export const usePools = () => {
 
     try {
       const signer = web3.getSigner();
-      const pool = new ethers.Contract(poolAddress, POOL_ABI, signer);
+      const pool = new ethers.Contract(poolAddress, POOL_ABI.abi, signer);
 
       const tx = await pool.removeLiquidity(liquidity);
       await tx.wait();
