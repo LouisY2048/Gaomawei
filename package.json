@@ -1,6 +1,7 @@
 {
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@tenado/i18n-cli": "^1.4.9",
     "hardhat": "^2.22.19"
   },
   "name": "gaomawei",

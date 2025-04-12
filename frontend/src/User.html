@@ -418,6 +418,12 @@
         let poolReserve0, poolReserve1, poolTotalSupply;
         let isContractAddressesVisible = false;
 
+        // 将这些函数暴露到全局，以便HTML元素的onblur属性可以调用它们
+        window.calculateFromToken0 = calculateFromToken0;
+        window.calculateFromToken1 = calculateFromToken1;
+        window.copyToClipboard = copyToClipboard;
+        window.toggleContractAddresses = toggleContractAddresses;
+
         async function connectWallet() {
             try {
                 if (!window.ethereum) {
@@ -547,7 +553,7 @@
             // 检查合约地址是否有效
             if (!contractAddresses || !contractAddresses.Pool || !contractAddresses.Token0 || !contractAddresses.Token1) {
                 console.error("合约地址无效或未完全加载:", contractAddresses);
-                alert("合约地址无效，请确保已正确部署合约并重新加载页面。");
+                
                 return;
             }
             
@@ -1061,21 +1067,17 @@
                 .then(response => response.json())
                 .then(data => {
                     contractAddresses = data;
-                    // 不在这里初始化合约，而是等待用户点击连接按钮后初始化
-                    console.log("合约地址已加载，等待连接钱包");
-                })
-                .catch(error => {
-                    console.error("加载合约地址失败:", error);
+                    initializeContracts();
                 });
 
             // 绑定按钮点击事件
             document.getElementById('connectWallet').addEventListener('click', connectWallet);
             
-            // 绑定其他相关按钮
+            // 添加其他必要的事件监听
             document.getElementById('addLiquidity').addEventListener('click', addLiquidity);
             document.getElementById('removeLiquidity').addEventListener('click', removeLiquidity);
             document.getElementById('swap').addEventListener('click', swap);
-            document.getElementById('claimFees')?.addEventListener('click', claimFees);
+            document.getElementById('claimFees').addEventListener('click', claimFees);
 
             console.log("页面加载完成，事件监听器已设置");
         });

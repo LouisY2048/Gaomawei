@@ -1,0 +1,15 @@
+module.exports = {
+  entry: ['src'],
+  exclude: [],
+  local: 'zh-CN',
+  localPath: 'src/locales',
+  langs: ['en-US'],
+  keyPrefix: '',
+  i18nImport: "import { i18n } from 'i18n';",
+  i18nObject: '',
+  i18nMethod: 't',
+  translate: null,
+  ignoreText: 'i18n-disable',
+  ignoreMethods: [],
+  ignoreAttributes: ['style', 'class', 'script'],
+};
