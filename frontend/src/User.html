@@ -1061,19 +1061,21 @@
                 .then(response => response.json())
                 .then(data => {
                     contractAddresses = data;
-                    initContracts();
+                    // 不在这里初始化合约，而是等待用户点击连接按钮后初始化
+                    console.log("合约地址已加载，等待连接钱包");
+                })
+                .catch(error => {
+                    console.error("加载合约地址失败:", error);
                 });
 
             // 绑定按钮点击事件
-            document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
-            document.getElementById('mintTokens').addEventListener('click', mintTokens);
-            document.getElementById('queryUserBalance').addEventListener('click', queryUserBalance);
-            document.getElementById('approveToken0').addEventListener('click', approveToken0);
-            document.getElementById('approveToken1').addEventListener('click', approveToken1);
-            document.getElementById('getPoolInfo').addEventListener('click', getPoolInfo);
-            document.getElementById('switchUserBtn').addEventListener('click', function() {
-                window.location.href = 'index.html';
-            });
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            
+            // 绑定其他相关按钮
+            document.getElementById('addLiquidity').addEventListener('click', addLiquidity);
+            document.getElementById('removeLiquidity').addEventListener('click', removeLiquidity);
+            document.getElementById('swap').addEventListener('click', swap);
+            document.getElementById('claimFees')?.addEventListener('click', claimFees);
 
             console.log("页面加载完成，事件监听器已设置");
         });
