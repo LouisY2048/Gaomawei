@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>去中心化交易所 - 用户2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <link rel="stylesheet" href="components/CryptoBackground.css">
     <style>
         :root {
             --primary-color: #3f51b5;
@@ -408,7 +409,9 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import initCryptoBackground from './components/CryptoBackground.js';
+        
         let provider, signer, pool, token0, token1;
         let contractAddresses;
         let userAddress;
@@ -1047,23 +1050,36 @@
             }
         }
 
-        // 添加事件监听器
-        window.addEventListener('load', function() {
-            // 添加MetaMask连接按钮事件监听
-            document.getElementById("connectWallet").addEventListener("click", connectWallet);
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化加密货币背景
+            initCryptoBackground();
             
-            // 添加按钮点击事件
-            document.getElementById("addLiquidity").addEventListener("click", addLiquidity);
-            document.getElementById("removeLiquidity").addEventListener("click", removeLiquidity);
-            document.getElementById("swap").addEventListener("click", swap);
-            
-            // 初始禁用功能按钮，直到钱包连接
-            document.getElementById("addLiquidity").disabled = true;
-            document.getElementById("removeLiquidity").disabled = true;
-            document.getElementById("swap").disabled = true;
+            // 原有的初始化代码
+            // 加载合约地址
+            fetch('./contract-addresses.json')
+                .then(response => response.json())
+                .then(data => {
+                    contractAddresses = data;
+                    initContracts();
+                });
+
+            // 绑定按钮点击事件
+            document.getElementById('connectWalletBtn').addEventListener('click', connectWallet);
+            document.getElementById('mintTokens').addEventListener('click', mintTokens);
+            document.getElementById('queryUserBalance').addEventListener('click', queryUserBalance);
+            document.getElementById('approveToken0').addEventListener('click', approveToken0);
+            document.getElementById('approveToken1').addEventListener('click', approveToken1);
+            document.getElementById('getPoolInfo').addEventListener('click', getPoolInfo);
+            document.getElementById('switchUserBtn').addEventListener('click', function() {
+                window.location.href = 'index.html';
+            });
 
             console.log("页面加载完成，事件监听器已设置");
         });
     </script>
+    
+    <!-- 添加修复滚动的脚本 -->
+    <script type="module" src="components/FixCryptoBackgroundScrolling.js"></script>
 </body>
 </html> 

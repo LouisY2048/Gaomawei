@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数字货币主题背景</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            font-family: 'Arial', sans-serif;
+            position: relative;
+        }
+
+        /* 网格背景 */
+        .grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* 加密货币符号 */
+        .crypto-symbols {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .symbol {
+            position: absolute;
+            color: rgba(0, 255, 200, 0.7);
+            font-size: 24px;
+            font-weight: bold;
+            opacity: 0;
+            animation: float 15s infinite linear;
+            text-shadow: 0 0 10px rgba(0, 255, 200, 0.5);
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) scale(0.5);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100px) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* 数据流效果 */
+        .data-stream {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .stream {
+            position: absolute;
+            width: 2px;
+            height: 100px;
+            background: linear-gradient(to bottom, transparent, rgba(0, 255, 200, 0.5), transparent);
+            animation: stream 5s infinite linear;
+        }
+
+        @keyframes stream {
+            0% {
+                transform: translateY(-100px);
+            }
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+
+        /* 中心聚光灯效果 */
+        .spotlight {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 200, 0.2) 0%, transparent 70%);
+            filter: blur(50px);
+            z-index: 1;
+        }
+
+        /* 比特币标志 */
+        .bitcoin-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="%23FF9900" d="M504 256c0 137-111 248-248 248S8 393 8 256 119 8 256 8s248 111 248 248zm-141.7-35.33c4.937-32.1-20.19-49.12-54.51-60.54l11.15-44.7-27.21-6.781-10.85 43.52c-7.154-1.783-14.5-3.464-21.8-5.131l10.93-43.81-27.2-6.781-11.15 44.69c-5.922-1.349-11.73-2.682-17.38-4.084l.034-.14-37.53-9.37-7.239 29.06s20.19 4.627 19.76 4.913c11.02 2.751 13.01 10.04 12.68 15.82l-12.7 50.92c.76.194 1.744.473 2.85.907-.922-.23-1.905-.473-2.852-.707l-17.8 71.34c-1.349 3.348-4.767 8.37-12.47 6.464.27.395-19.78-4.937-19.78-4.937l-13.51 31.15 35.41 8.827c6.588 1.651 13.05 3.379 19.4 5.006l-11.26 45.21 27.18 6.781 11.15-44.73a1038 1038 0 0021.69 5.627l-11.11 44.52 27.21 6.781 11.26-45.13c70.38 13.32 123.3 7.937 145.6-55.58 17.21-60.78-8.675-95.15-36.61-117.8 26-6.129 45.62-23.6 50.83-59.72zm-62.18 87.18c-12.26 49.09-94.46 22.57-121.1 15.94l21.8-87.34c26.65 6.634 109.8 13.15 99.3 71.4zm12.26-87.33c-11.27 45.09-80.74 22.2-103.3 16.72l19.66-78.82c22.55 5.468 92.41 11.71 83.64 62.1z"/></svg>') no-repeat center;
+            background-size: contain;
+            z-index: 2;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid"></div>
+    <div class="crypto-symbols" id="symbols"></div>
+    <div class="data-stream" id="streams"></div>
+    <div class="spotlight"></div>
+    <div class="bitcoin-logo"></div>
+
+    <script>
+        // 添加加密货币符号
+        const symbols = ['₿', 'Ξ', 'Ł', 'Ƀ', 'Ⱥ', 'Ɇ', '₮', '₳', 'Ɏ', 'Ȅ'];
+        const symbolsContainer = document.getElementById('symbols');
+        
+        for (let i = 0; i < 20; i++) {
+            const symbol = document.createElement('div');
+            symbol.className = 'symbol';
+            symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            symbol.style.left = Math.random() * 100 + '%';
+            symbol.style.animationDelay = Math.random() * 15 + 's';
+            symbolsContainer.appendChild(symbol);
+        }
+
+        // 添加数据流
+        const streamsContainer = document.getElementById('streams');
+        
+        for (let i = 0; i < 10; i++) {
+            const stream = document.createElement('div');
+            stream.className = 'stream';
+            stream.style.left = Math.random() * 100 + '%';
+            stream.style.animationDelay = Math.random() * 5 + 's';
+            streamsContainer.appendChild(stream);
+        }
+    </script>
+</body>
+</html>
