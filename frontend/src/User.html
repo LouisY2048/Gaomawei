@@ -391,6 +391,20 @@
         <div class="section">
             <h2>账户信息</h2>
             <div id="accountInfo">请连接钱包查看账户信息</div>
+            <div id="feesInfo" style="display: none;">
+                <h3>手续费信息</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">待领取 Token0 手续费:</div>
+                        <div class="info-value" id="pendingFees0">0</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">待领取 Token1 手续费:</div>
+                        <div class="info-value" id="pendingFees1">0</div>
+                    </div>
+                </div>
+                <button id="claimFees" class="claim-btn">领取手续费</button>
+            </div>
         </div>
     </div>
 
@@ -679,6 +693,9 @@
                         </div>
                     </div>
                 `;
+                
+                // 更新手续费信息
+                await updateFeesInfo();
                 
                 console.log("UI更新成功");
             } catch (error) {
@@ -987,6 +1004,47 @@
         function updateTokenInUI() {
             const tokenInSelection = document.getElementById("tokenIn").value;
             // 可以在这里根据选择更新UI元素
+        }
+
+        async function updateFeesInfo() {
+            try {
+                if (!pool || !userAddress) return;
+                
+                const [fees0, fees1] = await pool.getPendingFees(userAddress);
+                document.getElementById('pendingFees0').textContent = ethers.utils.formatEther(fees0);
+                document.getElementById('pendingFees1').textContent = ethers.utils.formatEther(fees1);
+                
+                const feesInfo = document.getElementById('feesInfo');
+                if (fees0.gt(0) || fees1.gt(0)) {
+                    feesInfo.style.display = 'block';
+                } else {
+                    feesInfo.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('更新手续费信息失败:', error);
+            }
+        }
+
+        async function claimFees() {
+            try {
+                if (!pool) {
+                    throw new Error('合约未初始化');
+                }
+                
+                const tx = await pool.claimFees();
+                await tx.wait();
+                
+                // 更新显示
+                await updateFeesInfo();
+                await updateUI();
+                
+                document.getElementById('claimFees').innerHTML = 
+                    '<div class="success">手续费领取成功！</div>';
+            } catch (error) {
+                console.error('领取手续费失败:', error);
+                document.getElementById('claimFees').innerHTML = 
+                    `<div class="error">领取手续费失败: ${error.message}</div>`;
+            }
         }
 
         // 添加事件监听器
