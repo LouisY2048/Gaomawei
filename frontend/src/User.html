@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>去中心化交易所 - 用户2</title>
+    <title>Decentralized Exchange - User 2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <link rel="stylesheet" href="components/CryptoBackground.css">
     <style>
@@ -307,104 +307,104 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>去中心化交易所 - 用户2</h1>
+            <h1>Decentralized Exchange - User 2</h1>
             <div class="wallet-info">
-                <button id="connectWallet">连接 MetaMask</button>
+                <button id="connectWallet">Connect MetaMask</button>
                 <span id="walletAddress"></span>
-                <a href="index.html" class="user-switch-btn" target="_blank">返回用户1</a>
+                <a href="index.html" class="user-switch-btn" target="_blank">Back to User 1</a>
             </div>
         </div>
 
         <div class="section">
-            <h2>添加流动性</h2>
+            <h2>Add Liquidity</h2>
             <div class="form-group">
-                <label>Token0 数量:</label>
-                <input type="number" id="amount0" placeholder="输入数量" onblur="calculateFromToken0()">
+                <label>Token0 Amount:</label>
+                <input type="number" id="amount0" placeholder="Enter amount" onblur="calculateFromToken0()">
             </div>
             <div class="form-group">
-                <label>Token1 数量:</label>
-                <input type="number" id="amount1" placeholder="输入数量" onblur="calculateFromToken1()">
+                <label>Token1 Amount:</label>
+                <input type="number" id="amount1" placeholder="Enter amount" onblur="calculateFromToken1()">
             </div>
-            <button id="addLiquidity">添加流动性</button>
+            <button id="addLiquidity">Add Liquidity</button>
             <div id="addLiquidityResult"></div>
         </div>
 
         <div class="section">
-            <h2>移除流动性</h2>
+            <h2>Remove Liquidity</h2>
             <div class="form-group">
-                <label>LP Token 数量:</label>
-                <input type="number" id="removeAmount" placeholder="输入数量">
+                <label>LP Token Amount:</label>
+                <input type="number" id="removeAmount" placeholder="Enter amount">
             </div>
-            <button id="removeLiquidity">移除流动性</button>
+            <button id="removeLiquidity">Remove Liquidity</button>
             <div id="removeLiquidityResult"></div>
         </div>
 
         <div class="section">
-            <h2>代币交换</h2>
+            <h2>Token Swap</h2>
             <div class="form-group">
-                <label>输入代币数量:</label>
-                <input type="number" id="swapAmount" placeholder="输入数量">
+                <label>Input Token Amount:</label>
+                <input type="number" id="swapAmount" placeholder="Enter amount">
             </div>
             <div class="form-group">
-                <label>选择输入代币:</label>
+                <label>Select Input Token:</label>
                 <select id="tokenIn">
                     <option value="token0">Token0</option>
                     <option value="token1">Token1</option>
                 </select>
             </div>
-            <button id="swap">交换</button>
+            <button id="swap">Swap</button>
             <div id="swapResult"></div>
         </div>
 
         <div class="section">
-            <h2>池子信息</h2>
+            <h2>Pool Information</h2>
             <div id="poolInfo"></div>
             <div class="contract-address-container" id="contractAddressContainer" style="display: none;">
-                <h3>合约地址信息</h3>
+                <h3>Contract Address Information</h3>
                 <div class="info-grid">
                     <div class="info-item">
-                        <div class="info-label">Pool 合约:</div>
+                        <div class="info-label">Pool Contract:</div>
                         <div class="info-value">
                             <span id="poolContractAddress"></span>
-                            <button class="copy-btn" onclick="copyToClipboard('poolContractAddress')">复制</button>
+                            <button class="copy-btn" onclick="copyToClipboard('poolContractAddress')">Copy</button>
                         </div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Token0 合约:</div>
+                        <div class="info-label">Token0 Contract:</div>
                         <div class="info-value">
                             <span id="token0ContractAddress"></span>
-                            <button class="copy-btn" onclick="copyToClipboard('token0ContractAddress')">复制</button>
+                            <button class="copy-btn" onclick="copyToClipboard('token0ContractAddress')">Copy</button>
                         </div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">Token1 合约:</div>
+                        <div class="info-label">Token1 Contract:</div>
                         <div class="info-value">
                             <span id="token1ContractAddress"></span>
-                            <button class="copy-btn" onclick="copyToClipboard('token1ContractAddress')">复制</button>
+                            <button class="copy-btn" onclick="copyToClipboard('token1ContractAddress')">Copy</button>
                         </div>
                     </div>
                 </div>
-                <button class="toggle-btn" onclick="toggleContractAddresses()">隐藏合约地址</button>
+                <button class="toggle-btn" onclick="toggleContractAddresses()">Hide Contract Addresses</button>
             </div>
-            <button class="toggle-btn" id="showAddressesBtn" onclick="toggleContractAddresses()">显示合约地址</button>
+            <button class="toggle-btn" id="showAddressesBtn" onclick="toggleContractAddresses()">Show Contract Addresses</button>
         </div>
         
         <div class="section">
-            <h2>账户信息</h2>
-            <div id="accountInfo">请连接钱包查看账户信息</div>
+            <h2>Account Information</h2>
+            <div id="accountInfo">Please connect wallet to view account information</div>
             <div id="feesInfo" style="display: none;">
-                <h3>手续费信息</h3>
+                <h3>Fee Information</h3>
                 <div class="info-grid">
                     <div class="info-item">
-                        <div class="info-label">待领取 Token0 手续费:</div>
+                        <div class="info-label">Pending Token0 Fees:</div>
                         <div class="info-value" id="pendingFees0">0</div>
                     </div>
                     <div class="info-item">
-                        <div class="info-label">待领取 Token1 手续费:</div>
+                        <div class="info-label">Pending Token1 Fees:</div>
                         <div class="info-value" id="pendingFees1">0</div>
                     </div>
                 </div>
-                <button id="claimFees" class="claim-btn">领取手续费</button>
+                <button id="claimFees" class="claim-btn">Claim Fees</button>
             </div>
         </div>
     </div>
@@ -427,73 +427,73 @@
         async function connectWallet() {
             try {
                 if (!window.ethereum) {
-                    alert("请安装 MetaMask 扩展！");
+                    alert("Please install MetaMask extension!");
                     return;
                 }
 
                 // 获取账户
-                console.log("请求连接MetaMask账户...");
+                console.log("Requesting connection to MetaMask account...");
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAddress = accounts[0];
-                console.log("已连接账户:", userAddress);
+                console.log("Connected account:", userAddress);
                 
                 // 检查是否是新用户地址
                 const newUserAddress = "0x3527fEFc412c4982bFBf67f7b5debb40B464B9FD";
                 if (userAddress.toLowerCase() !== newUserAddress.toLowerCase()) {
-                    console.warn("当前连接的不是新用户账户。已连接:", userAddress);
-                    console.warn("请在MetaMask中切换到用户2账户:", newUserAddress);
+                    console.warn("Currently connected is not the new user account. Connected:", userAddress);
+                    console.warn("Please switch to User 2 account in MetaMask:", newUserAddress);
                     
                     const shouldProceed = confirm(
-                        "您当前连接的账户不是用户2的推荐账户。\n\n" +
-                        "推荐用户2账户: " + newUserAddress + "\n" +
-                        "当前连接账户: " + userAddress + "\n\n" +
-                        "是否仍要继续？\n" +
-                        "- 点击\"确定\"继续使用当前账户\n" +
-                        "- 点击\"取消\"中断连接，您可以在MetaMask中切换到正确的账户后再试"
+                        "The currently connected account is not the recommended User 2 account.\n\n" +
+                        "Recommended User 2 Account: " + newUserAddress + "\n" +
+                        "Currently Connected Account: " + userAddress + "\n\n" +
+                        "Do you want to continue?\n" +
+                        "- Click \"OK\" to continue with current account\n" +
+                        "- Click \"Cancel\" to abort, you can switch to the correct account in MetaMask and try again"
                     );
                     
                     if (!shouldProceed) {
-                        throw new Error("用户取消了连接 - 请在MetaMask中切换到正确的用户2账户");
+                        throw new Error("User cancelled connection - Please switch to the correct User 2 account in MetaMask");
                     }
                 } else {
-                    console.log("已成功连接到用户2的指定账户");
+                    console.log("Successfully connected to User 2's specified account");
                 }
                 
-                document.getElementById("walletAddress").innerHTML = `<div>地址: <span style="font-weight:bold;${userAddress.toLowerCase() === newUserAddress.toLowerCase() ? 'color:green;' : 'color:orange;'}">${userAddress.substring(0, 6)}...${userAddress.substring(38)}</span> ${userAddress.toLowerCase() === newUserAddress.toLowerCase() ? '✓' : '⚠️'}</div>`;
-                document.getElementById("connectWallet").innerText = "已连接";
+                document.getElementById("walletAddress").innerHTML = `<div>Address: <span style="font-weight:bold;${userAddress.toLowerCase() === newUserAddress.toLowerCase() ? 'color:green;' : 'color:orange;'}">${userAddress.substring(0, 6)}...${userAddress.substring(38)}</span> ${userAddress.toLowerCase() === newUserAddress.toLowerCase() ? '✓' : '⚠️'}</div>`;
+                document.getElementById("connectWallet").innerText = "Connected";
                 
-                console.log("初始化Web3 Provider...");
+                console.log("Initializing Web3 Provider...");
                 provider = new ethers.providers.Web3Provider(window.ethereum);
                 signer = provider.getSigner();
-                console.log("Provider和Signer初始化成功");
+                console.log("Provider and Signer initialized successfully");
 
                 // 检查网络
                 const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-                console.log("当前连接的网络chainId:", chainId);
-                if (chainId !== '0x7a69') { // Hardhat 本地网络
-                    console.warn("当前不是Hardhat网络，尝试切换...");
+                console.log("Current network chainId:", chainId);
+                if (chainId !== '0x7a69') { // Hardhat local network
+                    console.warn("Not connected to Hardhat network, attempting to switch...");
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x7a69' }], // Hardhat 本地网络
+                            params: [{ chainId: '0x7a69' }], // Hardhat local network
                         });
-                        console.log("成功切换到Hardhat网络");
+                        console.log("Successfully switched to Hardhat network");
                     } catch (switchError) {
-                        console.error("切换网络失败:", switchError);
-                        alert("请手动将网络切换到Hardhat本地网络 (chainId: 31337)");
+                        console.error("Failed to switch network:", switchError);
+                        alert("Please manually switch to Hardhat local network (chainId: 31337)");
                     }
                 }
 
                 // 加载合约地址
-                console.log("开始加载合约地址...");
+                console.log("Loading contract addresses...");
                 await loadContractAddresses();
                 
                 // 初始化合约
-                console.log("开始初始化合约...");
+                console.log("Initializing contracts...");
                 initializeContracts();
                 
                 // 更新UI
-                console.log("更新UI...");
+                console.log("Updating UI...");
                 await updateUI();
                 
                 // 设置代币兑换方向事件监听
@@ -504,16 +504,16 @@
                 document.getElementById("removeLiquidity").disabled = false;
                 document.getElementById("swap").disabled = false;
 
-                console.log("钱包连接成功，所有初始化步骤完成");
+                console.log("Wallet connected successfully, all initialization steps completed");
             } catch (error) {
-                console.error("连接钱包失败:", error);
-                let errorMsg = "连接失败";
+                console.error("Failed to connect wallet:", error);
+                let errorMsg = "Connection failed";
                 if (error.message) {
                     errorMsg += ": " + error.message;
                 }
                 document.getElementById("connectWallet").innerText = errorMsg;
                 document.getElementById("walletAddress").innerHTML = `<div class="error">${errorMsg}</div>`;
-                alert("连接MetaMask失败: " + error.message);
+                alert("Failed to connect MetaMask: " + error.message);
             }
         }
 
@@ -521,10 +521,10 @@
             try {
                 const response = await fetch('./contract-addresses.json');
                 if (!response.ok) {
-                    throw new Error('无法加载合约地址');
+                    throw new Error('Failed to load contract addresses');
                 }
                 contractAddresses = await response.json();
-                console.log("合约地址加载成功:", contractAddresses);
+                console.log("Contract addresses loaded successfully:", contractAddresses);
                 
                 // 修正合约地址的引用方式，适配不同的JSON结构
                 contractAddresses.Pool = contractAddresses.Pool || contractAddresses.pool;
@@ -542,17 +542,17 @@
                     Token1: contractAddresses.Token1
                 });
             } catch (error) {
-                console.error("加载合约地址失败:", error);
-                alert("加载合约地址失败，请确保已部署合约。");
+                console.error("Failed to load contract addresses:", error);
+                alert("Failed to load contract addresses, please ensure contracts are deployed.");
             }
         }
 
         function initializeContracts() {
-            console.log("创建合约实例...");
+            console.log("Creating contract instances...");
             
             // 检查合约地址是否有效
             if (!contractAddresses || !contractAddresses.Pool || !contractAddresses.Token0 || !contractAddresses.Token1) {
-                console.error("合约地址无效或未完全加载:", contractAddresses);
+                console.error("Invalid contract addresses or not fully loaded:", contractAddresses);
                 
                 return;
             }
@@ -562,17 +562,17 @@
                 if (!ethers.utils.isAddress(contractAddresses.Pool) || 
                     !ethers.utils.isAddress(contractAddresses.Token0) || 
                     !ethers.utils.isAddress(contractAddresses.Token1)) {
-                    console.error("合约地址格式不正确:", {
+                    console.error("Invalid contract address format:", {
                         Pool: contractAddresses.Pool,
                         Token0: contractAddresses.Token0,
                         Token1: contractAddresses.Token1
                     });
-                    alert("合约地址格式不正确，请检查contract-addresses.json文件。");
+                    alert("Invalid contract address format, please check contract-addresses.json file.");
                     return;
                 }
             } catch (formatError) {
-                console.error("验证地址格式时发生错误:", formatError);
-                alert("验证合约地址时出错: " + formatError.message);
+                console.error("Error validating address format:", formatError);
+                alert("Error validating contract address: " + formatError.message);
                 return;
             }
             
@@ -600,35 +600,35 @@
             ];
             
             try {
-                console.log("创建Pool合约实例，地址:", contractAddresses.Pool);
+                console.log("Creating Pool contract instance, address:", contractAddresses.Pool);
                 pool = new ethers.Contract(contractAddresses.Pool, poolAbi, signer);
                 
-                console.log("创建Token0合约实例，地址:", contractAddresses.Token0);
+                console.log("Creating Token0 contract instance, address:", contractAddresses.Token0);
                 token0 = new ethers.Contract(contractAddresses.Token0, tokenAbi, signer);
                 
-                console.log("创建Token1合约实例，地址:", contractAddresses.Token1);
+                console.log("Creating Token1 contract instance, address:", contractAddresses.Token1);
                 token1 = new ethers.Contract(contractAddresses.Token1, tokenAbi, signer);
                 
-                console.log("合约初始化成功，开始测试合约调用...");
+                console.log("Contract initialization successful, testing contract calls...");
                 // 尝试一次简单的合约调用来验证合约连接是否正常
                 pool.getReserves()
                     .then(reserves => {
-                        console.log("合约调用测试成功，储备:", reserves);
+                        console.log("Contract call test successful, reserves:", reserves);
                     })
                     .catch(err => {
-                        console.error("合约调用测试失败:", err);
-                        alert("合约连接测试失败，请检查合约是否已正确部署。错误: " + err.message);
+                        console.error("Contract call test failed:", err);
+                        alert("Contract connection test failed, please check if contracts are properly deployed. Error: " + err.message);
                     });
             } catch (error) {
-                console.error("初始化合约失败:", error);
-                console.error("完整错误信息:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-                alert("初始化合约失败: " + error.message + "\n请尝试使用不同的MetaMask账户或检查合约部署。");
+                console.error("Contract initialization failed:", error);
+                console.error("Full error details:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+                alert("Contract initialization failed: " + error.message + "\nPlease try using a different MetaMask account or check contract deployment.");
             }
         }
 
         async function updateUI() {
             if (!pool || !token0 || !token1) {
-                console.log("合约尚未初始化，无法更新UI");
+                console.log("Contracts not initialized, cannot update UI");
                 return;
             }
             
@@ -658,18 +658,18 @@
                 
                 // 更新池子信息
                 document.getElementById("poolInfo").innerHTML = `
-                    <h3>全局池子信息 <span class="shared-pool-info">（与所有用户共享）</span></h3>
+                    <h3>Global Pool Information <span class="shared-pool-info">(Shared with all users)</span></h3>
                     <div class="info-grid">
                         <div class="info-item">
-                            <div class="info-label">池子流动性:</div>
-                            <div class="info-value">${poolReserve0} ${token0Symbol} 和 ${poolReserve1} ${token1Symbol}</div>
+                            <div class="info-label">Pool Liquidity:</div>
+                            <div class="info-value">${poolReserve0} ${token0Symbol} and ${poolReserve1} ${token1Symbol}</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">当前价格:</div>
+                            <div class="info-label">Current Price:</div>
                             <div class="info-value">1 ${token0Symbol} = ${(poolReserve1 / poolReserve0).toFixed(6)} ${token1Symbol}</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">LP Token 总供应量:</div>
+                            <div class="info-label">LP Token Total Supply:</div>
                             <div class="info-value">${poolTotalSupply} LP</div>
                         </div>
                     </div>
@@ -677,22 +677,22 @@
                 
                 // 更新账户信息
                 document.getElementById("accountInfo").innerHTML = `
-                    <h3>用户2账户信息</h3>
+                    <h3>User 2 Account Information</h3>
                     <div class="info-grid">
                         <div class="info-item">
-                            <div class="info-label">${token0Symbol} 余额:</div>
+                            <div class="info-label">${token0Symbol} Balance:</div>
                             <div class="info-value">${token0Balance} ${token0Symbol}</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">${token1Symbol} 余额:</div>
+                            <div class="info-label">${token1Symbol} Balance:</div>
                             <div class="info-value">${token1Balance} ${token1Symbol}</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">LP Token 余额:</div>
+                            <div class="info-label">LP Token Balance:</div>
                             <div class="info-value">${lpBalance} LP</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">池子份额:</div>
+                            <div class="info-label">Pool Share:</div>
                             <div class="info-value">
                                 <span class="pool-share">${userPoolShare.toFixed(2)}%</span>
                                 <div class="pool-share-bar">
@@ -706,9 +706,9 @@
                 // 更新手续费信息
                 await updateFeesInfo();
                 
-                console.log("UI更新成功");
+                console.log("UI updated successfully");
             } catch (error) {
-                console.error("更新UI失败:", error);
+                console.error("Failed to update UI:", error);
             }
         }
 
@@ -737,7 +737,7 @@
                     document.getElementById("amount1").value = ethers.utils.formatEther(amount1);
                 }
             } catch (error) {
-                console.error("计算代币比例失败:", error);
+                console.error("Failed to calculate token ratio:", error);
             }
         }
 
@@ -766,13 +766,13 @@
                     document.getElementById("amount0").value = ethers.utils.formatEther(amount0);
                 }
             } catch (error) {
-                console.error("计算代币比例失败:", error);
+                console.error("Failed to calculate token ratio:", error);
             }
         }
 
         async function addLiquidity() {
             if (!pool || !token0 || !token1) {
-                alert("请先连接钱包");
+                alert("Please connect your wallet first");
                 return;
             }
             
@@ -781,56 +781,56 @@
                 const amount1Input = document.getElementById("amount1").value;
                 
                 if (!amount0Input || !amount1Input) {
-                    document.getElementById("addLiquidityResult").innerHTML = `<div class="error">请输入有效的代币数量</div>`;
+                    document.getElementById("addLiquidityResult").innerHTML = `<div class="error">Please enter valid token amounts</div>`;
                     return;
                 }
                 
                 const amount0 = ethers.utils.parseEther(amount0Input);
                 const amount1 = ethers.utils.parseEther(amount1Input);
                 
-                console.log(`添加流动性: ${amount0Input} Token0 和 ${amount1Input} Token1`);
+                console.log(`Adding liquidity: ${amount0Input} Token0 and ${amount1Input} Token1`);
                 
                 // 检查用户余额
                 const token0Balance = await token0.balanceOf(userAddress);
                 const token1Balance = await token1.balanceOf(userAddress);
                 
                 if (token0Balance.lt(amount0)) {
-                    document.getElementById("addLiquidityResult").innerHTML = `<div class="error">Token0 余额不足。当前: ${ethers.utils.formatEther(token0Balance)}, 需要: ${amount0Input}</div>`;
+                    document.getElementById("addLiquidityResult").innerHTML = `<div class="error">Insufficient Token0 balance. Current: ${ethers.utils.formatEther(token0Balance)}, Required: ${amount0Input}</div>`;
                     return;
                 }
                 
                 if (token1Balance.lt(amount1)) {
-                    document.getElementById("addLiquidityResult").innerHTML = `<div class="error">Token1 余额不足。当前: ${ethers.utils.formatEther(token1Balance)}, 需要: ${amount1Input}</div>`;
+                    document.getElementById("addLiquidityResult").innerHTML = `<div class="error">Insufficient Token1 balance. Current: ${ethers.utils.formatEther(token1Balance)}, Required: ${amount1Input}</div>`;
                     return;
                 }
                 
                 // 授权代币使用
-                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">正在授权 Token0...</div>`;
+                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">Authorizing Token0...</div>`;
                 await token0.approve(contractAddresses.Pool, amount0);
                 
-                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">正在授权 Token1...</div>`;
+                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">Authorizing Token1...</div>`;
                 await token1.approve(contractAddresses.Pool, amount1);
                 
                 // 添加流动性
-                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">正在添加流动性...</div>`;
+                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">Adding liquidity...</div>`;
                 const tx = await pool.addLiquidity(amount0, {gasLimit: 500000});
                 
-                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">交易已提交，等待确认...</div>`;
+                document.getElementById("addLiquidityResult").innerHTML = `<div class="info">Transaction submitted, waiting for confirmation...</div>`;
                 await tx.wait();
                 
-                document.getElementById("addLiquidityResult").innerHTML = `<div class="success">流动性添加成功！</div>`;
+                document.getElementById("addLiquidityResult").innerHTML = `<div class="success">Liquidity added successfully!</div>`;
                 
                 // 更新UI
                 updateUI();
             } catch (error) {
-                console.error("添加流动性失败:", error);
+                console.error("Failed to add liquidity:", error);
                 
-                let errorMessage = "添加流动性失败";
+                let errorMessage = "Failed to add liquidity";
                 if (error.message) {
                     if (error.message.includes("user rejected transaction")) {
-                        errorMessage = "用户拒绝交易";
+                        errorMessage = "Transaction rejected by user";
                     } else if (error.message.includes("insufficient funds")) {
-                        errorMessage = "余额不足以支付交易费用";
+                        errorMessage = "Insufficient funds for transaction fee";
                     } else {
                         errorMessage += ": " + error.message;
                     }
@@ -842,7 +842,7 @@
 
         async function removeLiquidity() {
             if (!pool) {
-                alert("请先连接钱包");
+                alert("Please connect your wallet first");
                 return;
             }
             
@@ -850,48 +850,48 @@
                 const lpAmountInput = document.getElementById("removeAmount").value;
                 
                 if (!lpAmountInput || lpAmountInput === "0") {
-                    document.getElementById("removeLiquidityResult").innerHTML = `<div class="error">请输入有效的 LP Token 数量</div>`;
+                    document.getElementById("removeLiquidityResult").innerHTML = `<div class="error">Please enter valid LP Token amount</div>`;
                     return;
                 }
                 
                 const lpAmount = ethers.utils.parseEther(lpAmountInput);
-                console.log(`开始移除流动性，LP Token 数量: ${lpAmountInput}`);
-                console.log(`Wei 数量: ${lpAmount.toString()}`);
+                console.log(`Starting liquidity removal, LP Token amount: ${lpAmountInput}`);
+                console.log(`Wei amount: ${lpAmount.toString()}`);
                 
                 // 检查用户LP余额
                 const lpBalance = await pool.balanceOf(userAddress);
-                console.log(`用户LP余额: ${ethers.utils.formatEther(lpBalance)}`);
+                console.log(`User LP balance: ${ethers.utils.formatEther(lpBalance)}`);
                 
                 if (lpBalance.lt(lpAmount)) {
                     document.getElementById("removeLiquidityResult").innerHTML = 
-                        `<div class="error">LP Token 余额不足。当前: ${ethers.utils.formatEther(lpBalance)}, 需要: ${lpAmountInput}</div>`;
+                        `<div class="error">Insufficient LP Token balance. Current: ${ethers.utils.formatEther(lpBalance)}, Required: ${lpAmountInput}</div>`;
                     return;
                 }
                 
                 // 移除流动性
-                document.getElementById("removeLiquidityResult").innerHTML = `<div class="info">正在移除流动性...</div>`;
+                document.getElementById("removeLiquidityResult").innerHTML = `<div class="info">Removing liquidity...</div>`;
                 const tx = await pool.removeLiquidity(lpAmount, {gasLimit: 500000});
                 
-                document.getElementById("removeLiquidityResult").innerHTML = `<div class="info">交易已提交，等待确认...</div>`;
+                document.getElementById("removeLiquidityResult").innerHTML = `<div class="info">Transaction submitted, waiting for confirmation...</div>`;
                 await tx.wait();
                 
-                document.getElementById("removeLiquidityResult").innerHTML = `<div class="success">流动性移除成功！</div>`;
+                document.getElementById("removeLiquidityResult").innerHTML = `<div class="success">Liquidity removed successfully!</div>`;
                 
                 // 更新UI
                 updateUI();
             } catch (error) {
-                console.error("移除流动性失败:", error);
+                console.error("Failed to remove liquidity:", error);
                 
-                let errorMessage = "移除流动性失败";
+                let errorMessage = "Failed to remove liquidity";
                 
                 if (error.message) {
                     if (error.message.includes("user rejected transaction")) {
-                        errorMessage = "用户拒绝交易";
+                        errorMessage = "Transaction rejected by user";
                     } else if (error.message.includes("insufficient funds")) {
-                        errorMessage = "余额不足以支付交易费用";
+                        errorMessage = "Insufficient funds for transaction fee";
                     } else if (error.message.includes("Internal JSON-RPC error")) {
                         try {
-                            // 尝试从错误中提取内部错误信息
+                            // Try to extract internal error message
                             const errorJson = JSON.parse(error.message.substring(error.message.indexOf('{')));
                             if (errorJson.message) {
                                 errorMessage += ": " + errorJson.message;
@@ -910,7 +910,7 @@
 
         async function swap() {
             if (!pool || !token0 || !token1) {
-                alert("请先连接钱包");
+                alert("Please connect your wallet first");
                 return;
             }
             
@@ -919,13 +919,13 @@
                 const tokenInSelection = document.getElementById("tokenIn").value;
                 
                 if (!amountInput || amountInput === "0") {
-                    document.getElementById("swapResult").innerHTML = `<div class="error">请输入有效的代币数量</div>`;
+                    document.getElementById("swapResult").innerHTML = `<div class="error">Please enter valid token amount</div>`;
                     return;
                 }
                 
                 const amount = ethers.utils.parseEther(amountInput);
                 
-                console.log(`交换代币: ${amountInput} ${tokenInSelection === "token0" ? "Token0" : "Token1"}`);
+                console.log(`Swapping tokens: ${amountInput} ${tokenInSelection === "token0" ? "Token0" : "Token1"}`);
                 
                 // 检查用户余额
                 let tokenBalance;
@@ -940,16 +940,16 @@
                 
                 if (tokenBalance.lt(amount)) {
                     document.getElementById("swapResult").innerHTML = 
-                        `<div class="error">${tokenInSelection === "token0" ? "Token0" : "Token1"} 余额不足。当前: ${ethers.utils.formatEther(tokenBalance)}, 需要: ${amountInput}</div>`;
+                        `<div class="error">Insufficient ${tokenInSelection === "token0" ? "Token0" : "Token1"} balance. Current: ${ethers.utils.formatEther(tokenBalance)}, Required: ${amountInput}</div>`;
                     return;
                 }
                 
                 // 授权代币使用
-                document.getElementById("swapResult").innerHTML = `<div class="info">正在授权代币...</div>`;
+                document.getElementById("swapResult").innerHTML = `<div class="info">Authorizing token...</div>`;
                 await tokenContract.approve(contractAddresses.Pool, amount);
                 
                 // 交换代币
-                document.getElementById("swapResult").innerHTML = `<div class="info">正在交换代币...</div>`;
+                document.getElementById("swapResult").innerHTML = `<div class="info">Swapping tokens...</div>`;
                 let tx;
                 if (tokenInSelection === "token0") {
                     tx = await pool.swapToken0(amount, {gasLimit: 500000});
@@ -957,22 +957,22 @@
                     tx = await pool.swapToken1(amount, {gasLimit: 500000});
                 }
                 
-                document.getElementById("swapResult").innerHTML = `<div class="info">交易已提交，等待确认...</div>`;
+                document.getElementById("swapResult").innerHTML = `<div class="info">Transaction submitted, waiting for confirmation...</div>`;
                 await tx.wait();
                 
-                document.getElementById("swapResult").innerHTML = `<div class="success">代币交换成功！</div>`;
+                document.getElementById("swapResult").innerHTML = `<div class="success">Token swap successful!</div>`;
                 
                 // 更新UI
                 updateUI();
             } catch (error) {
-                console.error("代币交换失败:", error);
+                console.error("Failed to swap tokens:", error);
                 
-                let errorMessage = "代币交换失败";
+                let errorMessage = "Failed to swap tokens";
                 if (error.message) {
                     if (error.message.includes("user rejected transaction")) {
-                        errorMessage = "用户拒绝交易";
+                        errorMessage = "Transaction rejected by user";
                     } else if (error.message.includes("insufficient funds")) {
-                        errorMessage = "余额不足以支付交易费用";
+                        errorMessage = "Insufficient funds for transaction fee";
                     } else {
                         errorMessage += ": " + error.message;
                     }
@@ -989,7 +989,7 @@
             if (isContractAddressesVisible) {
                 container.style.display = "none";
                 toggleBtn.style.display = "block";
-                toggleBtn.innerText = "显示合约地址";
+                toggleBtn.innerText = "Show Contract Addresses";
             } else {
                 container.style.display = "block";
                 toggleBtn.style.display = "none";
@@ -1002,11 +1002,11 @@
             const text = document.getElementById(elementId).innerText;
             navigator.clipboard.writeText(text)
                 .then(() => {
-                    alert("合约地址已复制到剪贴板");
+                    alert("Contract address copied to clipboard");
                 })
                 .catch(err => {
-                    console.error('复制失败: ', err);
-                    alert("复制失败，请手动选择并复制");
+                    console.error('Failed to copy: ', err);
+                    alert("Failed to copy, please select and copy manually");
                 });
         }
 
@@ -1030,14 +1030,14 @@
                     feesInfo.style.display = 'none';
                 }
             } catch (error) {
-                console.error('更新手续费信息失败:', error);
+                console.error('Failed to update fee information:', error);
             }
         }
 
         async function claimFees() {
             try {
                 if (!pool) {
-                    throw new Error('合约未初始化');
+                    throw new Error('Contract not initialized');
                 }
                 
                 const tx = await pool.claimFees();
@@ -1048,11 +1048,11 @@
                 await updateUI();
                 
                 document.getElementById('claimFees').innerHTML = 
-                    '<div class="success">手续费领取成功！</div>';
+                    '<div class="success">Fees claimed successfully!</div>';
             } catch (error) {
-                console.error('领取手续费失败:', error);
+                console.error('Failed to claim fees:', error);
                 document.getElementById('claimFees').innerHTML = 
-                    `<div class="error">领取手续费失败: ${error.message}</div>`;
+                    `<div class="error">Failed to claim fees: ${error.message}</div>`;
             }
         }
 
@@ -1079,7 +1079,7 @@
             document.getElementById('swap').addEventListener('click', swap);
             document.getElementById('claimFees').addEventListener('click', claimFees);
 
-            console.log("页面加载完成，事件监听器已设置");
+            console.log("Page loaded, event listeners set");
         });
     </script>
     

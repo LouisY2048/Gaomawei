@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数字货币市场行情</title>
+    <title>Cryptocurrency Market Data</title>
     <style>
         :root {
             --primary-color: #3f51b5;
@@ -271,22 +271,22 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>数字货币市场行情</h1>
+            <h1>Cryptocurrency Market Data</h1>
             <div class="nav-links">
-                <a href="index.html" class="nav-link">交易所首页</a>
-                <button id="refreshData" class="refresh-btn">刷新数据</button>
+                <a href="index.html" class="nav-link">Exchange Home</a>
+                <button id="refreshData" class="refresh-btn">Refresh Data</button>
             </div>
         </div>
 
         <div class="section">
-            <h2>市场概览</h2>
+            <h2>Market Overview</h2>
             <div id="marketOverview" class="loading">
                 <div class="loading-spinner"></div>
             </div>
         </div>
 
         <div class="section">
-            <h2>热门数字货币</h2>
+            <h2>Popular Cryptocurrencies</h2>
             <div id="cryptoList" class="crypto-grid">
                 <div class="loading">
                     <div class="loading-spinner"></div>
@@ -295,7 +295,7 @@
         </div>
 
         <div class="section">
-            <h2>比特币价格走势</h2>
+            <h2>Bitcoin Price Trend</h2>
             <div class="chart-container" id="bitcoinChart">
                 <div class="loading">
                     <div class="loading-spinner"></div>
@@ -304,7 +304,7 @@
         </div>
 
         <div class="section">
-            <h2>以太坊价格走势</h2>
+            <h2>Ethereum Price Trend</h2>
             <div class="chart-container" id="ethereumChart">
                 <div class="loading">
                     <div class="loading-spinner"></div>
@@ -340,28 +340,28 @@
                 // 获取热门加密货币列表
                 const coinsResponse = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&price_change_percentage=24h');
                 if (!coinsResponse.ok) {
-                    throw new Error(`HTTP 错误! 状态: ${coinsResponse.status}`);
+                    throw new Error(`HTTP error! Status: ${coinsResponse.status}`);
                 }
                 const coinsData = await coinsResponse.json();
                 
                 // 获取全球市场数据
                 const globalResponse = await fetch('https://api.coingecko.com/api/v3/global');
                 if (!globalResponse.ok) {
-                    throw new Error(`HTTP 错误! 状态: ${globalResponse.status}`);
+                    throw new Error(`HTTP error! Status: ${globalResponse.status}`);
                 }
                 const globalData = await globalResponse.json();
                 
                 // 获取比特币历史数据
                 const btcHistoryResponse = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7');
                 if (!btcHistoryResponse.ok) {
-                    throw new Error(`HTTP 错误! 状态: ${btcHistoryResponse.status}`);
+                    throw new Error(`HTTP error! Status: ${btcHistoryResponse.status}`);
                 }
                 const btcHistoryData = await btcHistoryResponse.json();
                 
                 // 获取以太坊历史数据
                 const ethHistoryResponse = await fetch('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=7');
                 if (!ethHistoryResponse.ok) {
-                    throw new Error(`HTTP 错误! 状态: ${ethHistoryResponse.status}`);
+                    throw new Error(`HTTP error! Status: ${ethHistoryResponse.status}`);
                 }
                 const ethHistoryData = await ethHistoryResponse.json();
                 
@@ -373,8 +373,8 @@
                 
                 hideLoading();
             } catch (error) {
-                console.error('获取市场数据失败:', error);
-                showError('获取数据失败，请稍后再试。可能是 API 调用次数限制，请等待一分钟后刷新。');
+                console.error('Failed to fetch market data:', error);
+                showError('Failed to fetch data, please try again later. This may be due to API rate limiting, please wait a minute before refreshing.');
                 hideLoading();
             }
         }
@@ -392,27 +392,27 @@
             const overviewHTML = `
                 <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: space-between; margin-top: 15px;">
                     <div style="flex: 0 0 auto; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; min-width: 160px;">
-                        <div class="info-label">总市值</div>
+                        <div class="info-label">Total Market Cap</div>
                         <div class="info-value">${totalMarketCap}</div>
                     </div>
                     <div style="flex: 0 0 auto; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; min-width: 160px;">
-                        <div class="info-label">24h 交易量</div>
+                        <div class="info-label">24h Trading Volume</div>
                         <div class="info-value">${totalVolume}</div>
                     </div>
                     <div style="flex: 0 0 auto; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; min-width: 160px;">
-                        <div class="info-label">比特币市值占比</div>
+                        <div class="info-label">Bitcoin Market Cap Dominance</div>
                         <div class="info-value">${btcDominance}%</div>
                     </div>
                     <div style="flex: 0 0 auto; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; min-width: 160px;">
-                        <div class="info-label">以太坊市值占比</div>
+                        <div class="info-label">Ethereum Market Cap Dominance</div>
                         <div class="info-value">${ethDominance}%</div>
                     </div>
                     <div style="flex: 0 0 auto; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; min-width: 160px;">
-                        <div class="info-label">活跃加密货币</div>
+                        <div class="info-label">Active Cryptocurrencies</div>
                         <div class="info-value">${data.active_cryptocurrencies}</div>
                     </div>
                     <div style="flex: 0 0 auto; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; min-width: 160px;">
-                        <div class="info-label">市场数据更新时间</div>
+                        <div class="info-label">Market Data Update Time</div>
                         <div class="info-value">${new Date().toLocaleString()}</div>
                     </div>
                 </div>
@@ -438,19 +438,19 @@
                         </div>
                         <div class="crypto-details">
                             <div class="crypto-data">
-                                <span class="crypto-label">价格</span>
+                                <span class="crypto-label">Price</span>
                                 <span class="crypto-value">$${coin.current_price.toLocaleString()}</span>
                             </div>
                             <div class="crypto-data">
-                                <span class="crypto-label">24h 变化</span>
+                                <span class="crypto-label">24h Change</span>
                                 <span class="crypto-value ${priceChangeClass}">${priceChangeSign}${coin.price_change_percentage_24h.toFixed(2)}%</span>
                             </div>
                             <div class="crypto-data">
-                                <span class="crypto-label">市值</span>
+                                <span class="crypto-label">Market Cap</span>
                                 <span class="crypto-value">$${coin.market_cap.toLocaleString()}</span>
                             </div>
                             <div class="crypto-data">
-                                <span class="crypto-label">24h 交易量</span>
+                                <span class="crypto-label">24h Volume</span>
                                 <span class="crypto-value">$${coin.total_volume.toLocaleString()}</span>
                             </div>
                         </div>
@@ -488,7 +488,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '比特币价格 (USD)',
+                        label: 'Bitcoin Price (USD)',
                         data: prices,
                         borderColor: '#F7931A',
                         backgroundColor: 'rgba(247, 147, 26, 0.1)',
@@ -504,14 +504,14 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: '7天比特币价格走势'
+                            text: '7-Day Bitcoin Price Trend'
                         },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
                             callbacks: {
                                 label: function(context) {
-                                    return `价格: $${context.parsed.y.toLocaleString(undefined, {
+                                    return `Price: $${context.parsed.y.toLocaleString(undefined, {
                                         minimumFractionDigits: 2,
                                         maximumFractionDigits: 2
                                     })}`;
@@ -567,7 +567,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '以太坊价格 (USD)',
+                        label: 'Ethereum Price (USD)',
                         data: prices,
                         borderColor: '#627EEA',
                         backgroundColor: 'rgba(98, 126, 234, 0.1)',
@@ -583,14 +583,14 @@
                     plugins: {
                         title: {
                             display: true,
-                            text: '7天以太坊价格走势'
+                            text: '7-Day Ethereum Price Trend'
                         },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
                             callbacks: {
                                 label: function(context) {
-                                    return `价格: $${context.parsed.y.toLocaleString(undefined, {
+                                    return `Price: $${context.parsed.y.toLocaleString(undefined, {
                                         minimumFractionDigits: 2,
                                         maximumFractionDigits: 2
                                     })}`;
@@ -622,11 +622,11 @@
         // 格式化货币显示
         function formatCurrency(amount) {
             if (amount >= 1e12) {
-                return '$' + (amount / 1e12).toFixed(2) + ' 万亿';
+                return '$' + (amount / 1e12).toFixed(2) + ' Trillion';
             } else if (amount >= 1e9) {
-                return '$' + (amount / 1e9).toFixed(2) + ' 十亿';
+                return '$' + (amount / 1e9).toFixed(2) + ' Billion';
             } else if (amount >= 1e6) {
-                return '$' + (amount / 1e6).toFixed(2) + ' 百万';
+                return '$' + (amount / 1e6).toFixed(2) + ' Million';
             } else {
                 return '$' + amount.toLocaleString();
             }
