@@ -59,12 +59,7 @@ git clone https://github.com/LouisY2048/Dora.git
 
 2. Install dependencies
 ```bash
-# Install backend dependencies
-cd backend
-npm install
-
-# Install frontend dependencies
-cd frontend
+# Install node dependencies
 npm install
 ```
 
