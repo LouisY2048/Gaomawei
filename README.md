@@ -24,31 +24,9 @@ Dora/
      ```
 
 2. **Install MetaMask**
-   - Download and install MetaMask browser extension from [MetaMask official website](https://metamask.io/)
+   - Download and install MetaMask browser extension from [Chrome WebStore](https://chromewebstore.google.com/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn)
    - Create a new wallet or import an existing one
    - Make sure to securely store your seed phrase
-
-3. **Configure MetaMask for Local Development**
-   - Open MetaMask and click on the network dropdown (default: "Ethereum Mainnet")
-   - Click "Add Network" and then "Add a network manually"
-   - Fill in the following details for Hardhat local network:
-     ```
-     Network Name: Localhost
-     RPC URL: http://127.0.0.1:8545
-     Chain ID: 31337
-     Currency Symbol: ETH
-     Block Explorer URL: (leave empty)
-     ```
-   - Click "Save" to add the network
-   - Switch to the "Hardhat Local" network
-
-4. **Import Test Accounts**
-   - When you start the Hardhat local network, it will provide several test accounts with ETH
-   - To import these accounts into MetaMask:
-     1. Copy the private key of a test account from the Hardhat console
-     2. In MetaMask, click the account icon
-     3. Select "Import Account"
-     4. Paste the private key and click "Import"
 
 ## Installation and Setup
 
@@ -63,40 +41,58 @@ git clone https://github.com/LouisY2048/Dora.git
 npm install
 ```
 
-## Deployment
-
-1. Compile contracts
+3. Start local development network
 ```bash
 cd backend
+npx hardhat node
+```
+4. Configure MetaMask for local development
+   - Open MetaMask and click on the network dropdown which is on the left top
+   - Click "Add a custom network"
+   - Fill in the following details for local network:
+     ```
+     Network Name: localhost
+     RPC URL: http://127.0.0.1:8545
+     Chain ID: 31337
+     Currency Symbol: ETH
+     Block Explorer URL: (leave empty)
+     ```
+   - Click "Save" to add the network
+   - Switch to the "localhost" network
+
+4. Import test accounts
+   - When you start the localhost network, it will provide several test accounts with ETH
+   - To import these accounts into MetaMask:
+     1. Copy the private key of a test account from the localhost console
+     2. In MetaMask, click the account icon
+     3. Select "Add account or hardware wallet" and then choose "Private Key" mode
+     4. Paste the private key and click "Import"
+
+## Deployment(Run a new command line to do it)
+1. Compile contracts
+```bash
 npx hardhat compile
 ```
 
 2. Deploy contracts
 ```bash
-cd backend
-npx hardhat run scripts/deploy.js --network Hardhat Localhost
+npx hardhat run backend/scripts/deploy.js --network localhost
 ```
 
 ## Usage Guide
-
-1. Start local development network
-```bash
-cd backend
-npx hardhat node
-```
-
-2. Open frontend interface in browser
+1. Open frontend interface in browser
 ```bash
 cd frontend
 python3 -m http.server 8000
 ```
+   - Then, type “http://localhost:8000/src/ ” in the browser search box
 
-3. Connect MetaMask wallet
+2. Connect MetaMask wallet
    - Ensure MetaMask is installed
    - Connect to local development network
    - Click "Connect Wallet" button
 
-4. Use DEX features
+3. Use DEX features
    - Add Liquidity: Enter token amounts and confirm transaction
    - Remove Liquidity: Enter LP Token amount and confirm transaction
    - Token Swap: Select input token and amount, execute swap
