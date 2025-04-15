@@ -43,7 +43,6 @@ npm install
 
 3. Start local development network
 ```bash
-cd backend
 npx hardhat node
 ```
 4. Configure MetaMask for local development
